@@ -1,0 +1,5 @@
+ff ff ff ff ff ff c4 65 16 ae 5e 4f 08 00 45 00 000 4e 3a df 00 00 80 11 00 00 a9 fe 52 ba a9 fe ff ff 00 89 00 89 00 3a 5c 09 8c 3b 01 100 00 01 00 00 00 00 00 00 20 45 45 45 42 45 4f 45 47 45 50 46 44 46 44 43 41 43 41 43 41 43 41 43 41 43 41 43 41 43 41 42 4f 00 00 20 00 01
+ffffffffffffc46516ae5e4f08004500004e3ca700008011574aa9fe52b1a9feffff00890089003a567b91c9011000010000000000002045454542454f454745504644464443414341434143414341434143414341424d0000200001
+checksum 4db0c955 with reversed 0xEDB88320, note byte C9 is not captured due to bug in logic
+magic number in little endian (DCBA) 	21 44 DF 1C
+https://www.scadacore.com/tools/programming-calculators/online-checksum-calculator/
