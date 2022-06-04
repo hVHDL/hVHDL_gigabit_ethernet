@@ -1,8 +1,6 @@
 # gigabit_ethernet
 synthesizable minimal gigabit ethernet with RGMII interface
 
-code currently in https://github.com/johonkanen/ac_inout_psu/tree/master/source
-
 The ethernet communication is explored in following blog posts
 
 overview and MDIO :
