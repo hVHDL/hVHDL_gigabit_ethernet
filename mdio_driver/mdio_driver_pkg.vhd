@@ -2,25 +2,21 @@ library ieee;
     use ieee.std_logic_1164.all;
     use ieee.numeric_std.all;
 
-library work;
     use work.mdio_three_state_io_driver_pkg.all;
 
 package mdio_driver_pkg is
 
-    type mdio_driver_clock_group is record
-        clock : std_logic;
-    end record;
-    
     type mdio_driver_FPGA_three_state_record is record
         mdio_three_state_io_driver_FPGA_inout : mdio_three_state_io_driver_FPGA_inout_record;
     end record;
     
     type mdio_driver_FPGA_output_group is record
-        mdio_clock                 : std_logic;
+        mdio_clock              : std_logic;
+        mdio_data_is_out_when_1 : std_logic;
+        mdio_data_out           : std_logic;
     end record;
     
     type mdio_driver_data_input_group is record
-        MDIO_serial_data_in          : std_logic;
         mdio_data_read_is_requested  : boolean;
         mdio_data_write_is_requested : boolean;
         data_to_mdio                 : std_logic_vector(15 downto 0);
@@ -31,22 +27,10 @@ package mdio_driver_pkg is
     type mdio_driver_data_output_group is record
         mdio_write_is_ready : boolean;
         mdio_read_is_ready  : boolean;
-        mdio_read_when_1 : std_logic;
+        mdio_read_when_1    : std_logic;
         data_from_mdio      : std_logic_vector(15 downto 0);
     end record;
     
-    component mdio_driver is
-        port (
-            mdio_driver_clocks : in mdio_driver_clock_group;
-    
-            mdio_driver_FPGA_out : out mdio_driver_FPGA_output_group;
-            mdio_driver_FPGA_inout : inout mdio_driver_FPGA_three_state_record;
-    
-            mdio_driver_data_in : in mdio_driver_data_input_group;
-            mdio_driver_data_out : out mdio_driver_data_output_group
-        );
-    end component mdio_driver;
-
 ----------------------------------------------------------------
     procedure init_mdio_driver ( signal mdio_input : out mdio_driver_data_input_group);
 
