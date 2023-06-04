@@ -41,20 +41,15 @@ begin
     mdio_io_driver : process(core_clock, mdio_driver_data_in)
     begin
         if rising_edge(core_clock) then
-
-            generate_mdio_io_waveforms(mdio_transmit_control, mdio_three_state_io_driver_data_out); 
-            write_data_with_mdio(mdio_transmit_control);
-            read_data_with_mdio(mdio_transmit_control);
+            create_mdio_driver(mdio_transmit_control, mdio_three_state_io_driver_data_out.io_input_data); 
 
         end if; --rising_edge
-
         mdio_transmit_control.mdio_driver_interface <= (
             mdio_data_read_is_requested  => mdio_driver_data_in.mdio_data_read_is_requested  ,
             mdio_data_write_is_requested => mdio_driver_data_in.mdio_data_write_is_requested ,
             data_to_mdio                 => mdio_driver_data_in.data_to_mdio                 ,
             phy_address                  => mdio_driver_data_in.phy_address                  ,
             phy_register_address         => mdio_driver_data_in.phy_register_address        );
-
     end process mdio_io_driver;	
 
 ------------------------------------------------------------------------
