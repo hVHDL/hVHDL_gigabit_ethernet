@@ -53,23 +53,13 @@ package mdio_driver_internal_pkg is
     procedure init_mdio_driver (
         signal mdio_input : out mdio_driver_interface_record);
 ------------------------------------------------------------------------
-    procedure generate_mdio_io_waveforms (
-        signal self : inout mdio_driver_record;
-        mdio_io_in : in std_logic);
---------------------------------------------------
     procedure load_data_to_mdio_transmit_shift_register (
         signal self : out mdio_driver_record;
         data : std_logic_vector );
 --------------------------------------------------
-    procedure write_data_with_mdio (
-        signal self : inout mdio_driver_record);
-
     function mdio_write_is_ready ( self : mdio_driver_record)
         return boolean;
 --------------------------------------------------
-    procedure read_data_with_mdio (
-        signal self : inout mdio_driver_record);
-
     procedure read_data_from_mdio (
         signal self      : out mdio_driver_record;
         phy_address : std_logic_vector(7 downto 0);
@@ -98,19 +88,6 @@ package body mdio_driver_internal_pkg is
         mdio_io_in : in std_logic
     ) is
     begin
-        generate_mdio_io_waveforms(self, mdio_io_in);
-        write_data_with_mdio(self);
-        read_data_with_mdio(self);
-        
-    end create_mdio_driver;
---------------------------------------------------
-    procedure generate_mdio_io_waveforms
-    (
-        signal self : inout mdio_driver_record;
-        mdio_io_in  : in std_logic
-    ) is
-    begin
-
         init_mdio_driver(self.mdio_driver_interface);
 
         self.mdio_clock_counter <= self.mdio_clock_counter + 1;
@@ -123,9 +100,9 @@ package body mdio_driver_internal_pkg is
             self.mdio_clock <= '1'; 
         end if; 
 
+        self.mdio_io_data_out <= self.mdio_transmit_register(self.mdio_transmit_register'left);
         if self.mdio_clock_counter = 0 then
             self.mdio_transmit_register <= self.mdio_transmit_register(self.mdio_transmit_register'left-1 downto 0) & '0';
-            self.mdio_io_data_out <= self.mdio_transmit_register(self.mdio_transmit_register'left-1);
 
             self.MDIO_io_direction_is_out_when_1 <= '0';
             if self.mdio_read_clock > 90 then 
@@ -143,8 +120,53 @@ package body mdio_driver_internal_pkg is
                 self.mdio_data_receive_register <= self.mdio_data_receive_register(self.mdio_data_receive_register'left-1 downto 0) & mdio_io_in;
             end if;
         end if; 
-    end generate_mdio_io_waveforms;
+        if self.mdio_write_clock /= 0 then
+            self.mdio_write_clock <= self.mdio_write_clock - 1;
+        end if;
 
+        self.mdio_write_is_ready <= false;
+        if self.mdio_write_clock = 1 then
+            self.mdio_write_is_ready <= true;
+        end if;
+
+        if self.mdio_driver_interface.mdio_data_write_is_requested then
+            self.mdio_data_write_is_pending <= true;
+        end if;
+        if (self.mdio_driver_interface.mdio_data_write_is_requested or self.mdio_data_write_is_pending) and self.mdio_clock_counter = 0 then
+            self.mdio_data_write_is_pending <= false;
+            load_data_to_mdio_transmit_shift_register(self ,
+                                MDIO_write_command                          &
+                                self.mdio_driver_interface.phy_address(4 downto 0)          &
+                                self.mdio_driver_interface.phy_register_address(4 downto 0) &
+                                MDIO_write_data_delimiter                   &
+                                self.mdio_driver_interface.data_to_mdio(15 downto 0));
+            self.mdio_write_clock <= mdio_transmit_counter_high;
+            self.MDIO_io_direction_is_out_when_1 <= '1';
+        end if;
+        if self.mdio_read_clock /= 0 then
+            self.mdio_read_clock <= self.mdio_read_clock - 1;
+        end if;
+        
+        self.mdio_read_is_ready <= false;
+        if self.mdio_read_clock = 1 then
+            self.mdio_read_is_ready <= true;
+        end if;
+
+        if self.mdio_driver_interface.mdio_data_read_is_requested then
+            self.mdio_data_read_is_pending <= true;
+        end if;
+        if (self.mdio_driver_interface.mdio_data_read_is_requested or self.mdio_data_read_is_pending) and self.mdio_clock_counter = 0 then
+            self.mdio_data_read_is_pending <= false;
+            load_data_to_mdio_transmit_shift_register(self ,
+                                MDIO_read_command                           &
+                                self.mdio_driver_interface.phy_address(4 downto 0)          &
+                                self.mdio_driver_interface.phy_register_address(4 downto 0) &
+                                MDIO_write_data_delimiter);
+            self.mdio_read_clock <= mdio_transmit_counter_high;
+            self.MDIO_io_direction_is_out_when_1 <= '1';
+        end if;
+        
+    end create_mdio_driver;
 --------------------------------------------------
     procedure load_data_to_mdio_transmit_shift_register
     (
@@ -158,72 +180,6 @@ package body mdio_driver_internal_pkg is
     end load_data_to_mdio_transmit_shift_register;
 
 --------------------------------------------------
-    procedure write_data_with_mdio
-    (
-        signal self : inout mdio_driver_record
-    ) is
-        alias mdio_input is self.mdio_driver_interface;
-    begin
-
-        if self.mdio_write_clock /= 0 then
-            self.mdio_write_clock <= self.mdio_write_clock - 1;
-        end if;
-
-        self.mdio_write_is_ready <= false;
-        if self.mdio_write_clock = 1 then
-            self.mdio_write_is_ready <= true;
-        end if;
-
-        if mdio_input.mdio_data_write_is_requested then
-            self.mdio_data_write_is_pending <= true;
-        end if;
-        if (mdio_input.mdio_data_write_is_requested or self.mdio_data_write_is_pending) and self.mdio_clock_counter = 0 then
-            self.mdio_data_write_is_pending <= false;
-            load_data_to_mdio_transmit_shift_register(self ,
-                                MDIO_write_command                          &
-                                mdio_input.phy_address(4 downto 0)          &
-                                mdio_input.phy_register_address(4 downto 0) &
-                                MDIO_write_data_delimiter                   &
-                                mdio_input.data_to_mdio(15 downto 0));
-            self.mdio_write_clock <= mdio_transmit_counter_high;
-            self.MDIO_io_direction_is_out_when_1 <= '1';
-        end if;
-
-    end write_data_with_mdio;
---------------------------------------------------
-    procedure read_data_with_mdio
-    (
-        signal self : inout mdio_driver_record
-    ) is
-        alias mdio_input is self.mdio_driver_interface;
-    begin
-
-        if self.mdio_read_clock /= 0 then
-            self.mdio_read_clock <= self.mdio_read_clock - 1;
-        end if;
-        
-        self.mdio_read_is_ready <= false;
-        if self.mdio_read_clock = 1 then
-            self.mdio_read_is_ready <= true;
-        end if;
-
-        if mdio_input.mdio_data_read_is_requested then
-            self.mdio_data_read_is_pending <= true;
-        end if;
-        if (mdio_input.mdio_data_read_is_requested or self.mdio_data_read_is_pending) and self.mdio_clock_counter = 0 then
-            self.mdio_data_read_is_pending <= false;
-            load_data_to_mdio_transmit_shift_register(self ,
-                                MDIO_read_command                           &
-                                mdio_input.phy_address(4 downto 0)          &
-                                mdio_input.phy_register_address(4 downto 0) &
-                                MDIO_write_data_delimiter);
-            self.mdio_read_clock <= mdio_transmit_counter_high;
-            self.MDIO_io_direction_is_out_when_1 <= '1';
-        end if;
-        
-    end read_data_with_mdio;
-
-------------------------------------------------------------------------
     procedure init_mdio_driver
     (
         signal mdio_input : out mdio_driver_interface_record
