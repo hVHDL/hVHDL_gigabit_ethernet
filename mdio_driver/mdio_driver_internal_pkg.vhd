@@ -77,6 +77,9 @@ package mdio_driver_internal_pkg is
 
     function mdio_read_is_ready ( self : mdio_driver_record)
         return boolean;
+
+    function get_mdio_data ( self : mdio_driver_record)
+        return std_logic_vector;
 --------------------------------------------------
     procedure write_data_to_mdio (
         signal self      : out mdio_driver_record;
@@ -303,6 +306,16 @@ package body mdio_driver_internal_pkg is
     begin
         return self.mdio_write_is_ready;
     end mdio_write_is_ready;
+--------------------------------------------------
+    function get_mdio_data
+    (
+        self : mdio_driver_record
+    )
+    return std_logic_vector 
+    is
+    begin
+        return self.mdio_data_receive_register;
+    end get_mdio_data;
     
 --------------------------------------------------
 end package body mdio_driver_internal_pkg;
