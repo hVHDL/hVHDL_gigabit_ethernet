@@ -211,8 +211,6 @@ package body mdio_driver_internal_pkg is
         data_to_mdio      : in std_logic_vector(15 downto 0)
     ) is
     begin
-        assert (unsigned(register_address) < 32) report "invalid address written to mdio " & integer'image(to_integer(unsigned(register_address))) severity failure;
-        assert (unsigned(phy_address) < 32) report "invalid phy address written to mdio " & integer'image(to_integer(unsigned(register_address))) severity failure;
         mdio_input.mdio_data_write_is_requested <= true;
         mdio_input.phy_address                  <= phy_address;
         mdio_input.phy_register_address         <= register_address;
