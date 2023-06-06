@@ -2,14 +2,12 @@ library ieee;
     use ieee.std_logic_1164.all;
     use ieee.numeric_std.all;
 
-    use work.ethernet_clocks_pkg.all;
-
 package ethernet_rx_ddio_pkg is
 
 ------------------------------------------------------------------------
     type ethernet_rx_ddio_FPGA_input_group is record
-        rx_ctl : std_logic;
-        ethernet_rx_ddio_in : std_logic_vector(3 downto 0);
+        fpga_IO_HI : std_logic_vector(4 downto 0);
+        fpga_IO_LO : std_logic_vector(4 downto 0);
     end record;
     
 ------------------------------------------------------------------------
@@ -18,15 +16,6 @@ package ethernet_rx_ddio_pkg is
         ethernet_rx_byte : std_logic_vector(7 downto 0);
     end record;
     
-------------------------------------------------------------------------
-    component ethernet_rx_ddio is
-        port (
-            ethernet_rx_ddio_clocks   : in ethernet_rx_ddr_clock_group;
-            ethernet_rx_ddio_FPGA_in  : in ethernet_rx_ddio_FPGA_input_group;
-            ethernet_rx_ddio_data_out : out ethernet_rx_ddio_data_output_group
-        );
-    end component ethernet_rx_ddio;
-
 ------------------------------------------------------------------------
     function get_byte ( ethernet_rx_output : ethernet_rx_ddio_data_output_group)
         return std_logic_vector;

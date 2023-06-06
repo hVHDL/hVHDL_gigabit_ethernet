@@ -8,3 +8,5 @@ ghdl -a --ieee=synopsys --std=08 %source%/mdio_driver/mdio_driver_pkg.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/mdio_driver/mdio_driver_internal_pkg.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/mdio_driver/mmd_access_functions_pkg.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/mdio_driver/mdio_driver.vhd
+
+ghdl -a --ieee=synopsys --std=08 %source%/ethernet_rx_ddio/ethernet_rx_ddio_pkg.vhd
