@@ -18,20 +18,13 @@ entity ethernet_frame_receiver_tb is
 end;
 
 architecture sim of ethernet_frame_receiver_tb is
-    signal rstn : std_logic;
 
-    signal simulation_running : boolean;
-    signal simulator_clock : std_logic;
-    signal clocked_reset : std_logic;
+    signal simulator_clock : std_logic := '0';
     constant clock_period : time := 1 ns;
     constant simtime_in_clocks : integer := 105;
 
-    signal ethernet_frame_receiver_clocks   : ethernet_rx_ddr_clock_group;
-    signal ethernet_frame_receiver_FPGA_in  : ethernet_frame_receiver_FPGA_input_group;
-    signal ethernet_frame_receiver_data_out : ethernet_frame_receiver_data_output_group;
-
     signal simulation_counter : natural := 0;
-
+    ------------------------------------------------------------------------
     type std_array is array (integer range 0 to 11) of std_logic_vector(3 downto 0);
     constant test_array : std_array := (x"1",x"0",x"3",x"2",x"5",x"4",x"7",x"6",x"9",x"8",x"b",x"a");
 
@@ -40,6 +33,7 @@ architecture sim of ethernet_frame_receiver_tb is
     signal test_data : std_logic_vector(3 downto 0);
     signal toggled : boolean;
 
+------------------------------------------------------------------------
     function reverse_bits
     (
         std_vector : std_logic_vector 
@@ -54,6 +48,7 @@ architecture sim of ethernet_frame_receiver_tb is
         return reordered_vector;
     end reverse_bits;
 
+------------------------------------------------------------------------
     function reverse_bit_order
     (
         std_vector : std_logic_vector 
@@ -68,6 +63,7 @@ architecture sim of ethernet_frame_receiver_tb is
         return reordered_vector;
     end reverse_bit_order;
 
+------------------------------------------------------------------------
     function invert_bit_order
     (
         std_vector : std_logic_vector(31 downto 0)
@@ -83,8 +79,7 @@ architecture sim of ethernet_frame_receiver_tb is
     end invert_bit_order;
 
 
-    -- constant magic_check_1 : std_logic_vector(31 downto 0) := x"2144df1c";
-    -- constant magic_check_2 : std_logic_vector(31 downto 0) := x"c704dd7b";
+------------------------------------------------------------------------
 
     constant ethernet_test_frame_in_order : std_logic_vector := x"ffffffffffffc46516ae5e4f08004500004e3ca700008011574aa9fe52b1a9feffff00890089003a567b91c9011000010000000000002045454542454f454745504644464443414341434143414341434143414341424d0000200001"; 
     -- ff ff ff ff ff ff c4 65 16 ae 5e 4f 08 00 45 00 00 4e 3c a7 00 00 80 11 57 4a a9 fe 52 b1 a9 fe ff ff 00 89 00 89 00 3a 56 7b 91 c9 01 10 00 01 00 00 00 00 00 00 20 45 45 45 42 45 4f 45 47 45 50 46 44 46 44 43 41 43 41 43 41 43 41 43 41 43 41 43 41 43 41 42 4d 00 00 20 00 01 4d b0 c9 55
@@ -105,6 +100,12 @@ architecture sim of ethernet_frame_receiver_tb is
     signal checksum_test3         : std_logic_vector(31 downto 0) := (others => '1');
     signal checksum_test4         : std_logic_vector(31 downto 0) := (others => '1');
 
+
+    constant magic_check : std_logic_vector(31 downto 0) := x"2144df1c";
+    constant magic_check_inverted : std_logic_vector(31 downto 0) := x"c704dd7b";
+    signal fcs_detected : boolean := false;
+    signal inverted_fcs_detected : boolean := false;
+
 begin
 
 ------------------------------------------------------------------------
@@ -112,6 +113,8 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         wait for simtime_in_clocks*clock_period;
+        check(fcs_detected, "fcs was not detected");
+        check(inverted_fcs_detected, "inverted fcs was not detected");
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
     end process simtime;	
@@ -119,17 +122,11 @@ begin
     simulator_clock <= not simulator_clock after clock_period/2.0;
 
 ------------------------------------------------------------------------
-    clocked_reset_generator : process(simulator_clock, rstn)
+    stimulus : process(simulator_clock)
         variable data : std_logic_vector(3 downto 0);
 
     begin
-        if rstn = '0' then
-        -- reset state
-            clocked_reset <= '0';
-    
-        elsif rising_edge(simulator_clock) then
-            clocked_reset <= '1';
-
+        if rising_edge(simulator_clock) then
             if simulation_counter < 11 then
                 simulation_counter <= simulation_counter + 1;
             else
@@ -157,16 +154,16 @@ begin
             checksum_test2 <= checksum_test1;
             checksum_test3 <= checksum_test2;
             checksum_test4 <= checksum_test3;
+
+            if checksum = magic_check then
+                fcs_detected <= true;
+            end if;
+
+            if fcs_shift_register = magic_check_inverted then
+                inverted_fcs_detected <= true;
+            end if;
     
         end if; -- rstn
-    end process clocked_reset_generator;	
+    end process stimulus;	
 ------------------------------------------------------------------------
-
-    -- ethernet_frame_receiver_clocks <= (clock => simulator_clock);
-    --
-    -- u_ethernet_frame_receiver : ethernet_frame_receiver
-    -- port map( ethernet_frame_receiver_clocks,
-    -- 	  ethernet_frame_receiver_FPGA_in,
-    -- 	  ethernet_frame_receiver_data_in,
-    -- 	  ethernet_frame_receiver_data_out);
 end sim;

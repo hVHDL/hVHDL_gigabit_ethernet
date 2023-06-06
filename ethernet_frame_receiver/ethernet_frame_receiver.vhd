@@ -2,7 +2,6 @@ library ieee;
     use ieee.std_logic_1164.all;
     use ieee.numeric_std.all;
 
-library work;
     use work.ethernet_clocks_pkg.all;
     use work.ethernet_frame_receiver_pkg.all;
     use work.ethernet_frame_receiver_internal_pkg.all;

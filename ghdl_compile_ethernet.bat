@@ -10,3 +10,8 @@ ghdl -a --ieee=synopsys --std=08 %source%/mdio_driver/mmd_access_functions_pkg.v
 ghdl -a --ieee=synopsys --std=08 %source%/mdio_driver/mdio_driver.vhd
 
 ghdl -a --ieee=synopsys --std=08 %source%/ethernet_rx_ddio/ethernet_rx_ddio_pkg.vhd
+ghdl -a --ieee=synopsys --std=08 %source%/ethernet_clocks_pkg.vhd
+ghdl -a --ieee=synopsys --std=08 %source%/ethernet_common/PCK_CRC_32_D8.vhd
+
+ghdl -a --ieee=synopsys --std=08 %source%/ethernet_common/dual_port_ethernet_ram/ethernet_frame_ram_write_pkg.vhd
+ghdl -a --ieee=synopsys --std=08 %source%/ethernet_frame_receiver/ethernet_frame_receiver_pkg.vhd

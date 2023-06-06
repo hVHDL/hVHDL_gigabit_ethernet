@@ -14,6 +14,7 @@ package ethernet_rx_ddio_pkg is
     type ethernet_rx_ddio_data_output_group is record
         rx_ctl : std_logic_vector(1 downto 0);
         ethernet_rx_byte : std_logic_vector(7 downto 0);
+        byte_is_ready : boolean;
     end record;
     
 ------------------------------------------------------------------------
@@ -29,6 +30,9 @@ package ethernet_rx_ddio_pkg is
         return std_logic_vector;
 ------------------------------------------------------------------------
     function ethernet_rx_is_active ( ethernet_rx_ddr_output : ethernet_rx_ddio_data_output_group)
+        return boolean;
+------------------------------------------------------------------------
+    function byte_is_ready ( ethernet_rx_ddr_output : ethernet_rx_ddio_data_output_group)
         return boolean;
 ------------------------------------------------------------------------
 end package ethernet_rx_ddio_pkg;
@@ -107,6 +111,18 @@ package body ethernet_rx_ddio_pkg is
         end if;
         
     end ethernet_rx_is_active;
+
+    function byte_is_ready
+    (
+        ethernet_rx_ddr_output : ethernet_rx_ddio_data_output_group
+    )
+    return boolean
+    is
+    begin
+        return ethernet_rx_ddr_output.byte_is_ready;
+        
+    end byte_is_ready;
+------------------------------------------------------------------------
 ------------------------------------------------------------------------
 
     function get_byte
