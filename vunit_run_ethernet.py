@@ -13,6 +13,8 @@ eth.add_source_files(ROOT / "mdio_driver/mdio_driver_internal_pkg.vhd")
 eth.add_source_files(ROOT / "mdio_driver/mdio_driver_pkg.vhd")
 eth.add_source_files(ROOT / "mdio_driver/mdio_three_state_io_driver/mdio_three_state_io_driver_pkg.vhd")
 
+
+eth.add_source_files(ROOT / "ethernet_rx_ddio/efinix_fpga_ddio_record.vhd")
 eth.add_source_files(ROOT / "ethernet_rx_ddio/ethernet_rx_ddio_pkg.vhd")
 eth.add_source_files(ROOT / "ethernet_clocks_pkg.vhd")
 eth.add_source_files(ROOT / "ethernet_common/PCK_CRC_32_D8.vhd")

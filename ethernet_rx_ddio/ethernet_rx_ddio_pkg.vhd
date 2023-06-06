@@ -2,13 +2,12 @@ library ieee;
     use ieee.std_logic_1164.all;
     use ieee.numeric_std.all;
 
+    use work.fpga_ddio_record_pkg.fpga_ddio_record;
+
 package ethernet_rx_ddio_pkg is
 
 ------------------------------------------------------------------------
-    type ethernet_rx_ddio_FPGA_input_group is record
-        fpga_IO_HI : std_logic_vector(4 downto 0);
-        fpga_IO_LO : std_logic_vector(4 downto 0);
-    end record;
+    alias ethernet_rx_ddio_FPGA_input_group is fpga_ddio_record;
     
 ------------------------------------------------------------------------
     type ethernet_rx_ddio_data_output_group is record
