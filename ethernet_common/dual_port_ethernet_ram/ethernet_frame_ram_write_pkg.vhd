@@ -12,6 +12,7 @@ package ethernet_frame_ram_write_pkg is
     end record; 
 
     alias ram_write_control_group is ram_write_control_record;
+    constant init_ram_write_control : ram_write_control_record := ((others => '0'), (others => '0'), '0');
 ------------------------------------------------------------------------
     
     procedure init_ram_write (

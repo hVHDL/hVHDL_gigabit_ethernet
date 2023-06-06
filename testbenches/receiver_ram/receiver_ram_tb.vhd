@@ -3,35 +3,11 @@ LIBRARY ieee  ;
     USE ieee.std_logic_1164.all  ; 
     use ieee.math_real.all;
 
-    use work.ethernet_frame_ram_read_pkg.all;
-    use work.ethernet_frame_ram_write_pkg.all;
-
-entity dpram is
-    port (
-        clk1 : in std_logic	;
-        clk2 : in std_logic	;
-        read_port_control : in ram_read_control_record
-    );
-end entity dpram;
-
-
-architecture test of dpram is
-
-
-begin
-
-
-end test;
-------------------------------------------------------------------------
-LIBRARY ieee  ; 
-    USE ieee.NUMERIC_STD.all  ; 
-    USE ieee.std_logic_1164.all  ; 
-    use ieee.math_real.all;
-
 library vunit_lib;
 context vunit_lib.vunit_context;
 
     use work.ethernet_frame_ram_read_pkg.all;
+    use work.ethernet_frame_ram_write_pkg.all;
 
 entity receiver_ram_tb is
   generic (runner_cfg : string);
@@ -49,6 +25,8 @@ architecture vunit_simulation of receiver_ram_tb is
 
     signal ram_read_control_port : ram_read_control_group := init_ram_read_port;
     signal ram_read_out_port : ram_read_output_group := ram_read_output_init;
+
+    signal write_port : ram_write_control_record := init_ram_write_control;
 
     signal ram_reader : ram_reader_record := init_ram_reader;
     signal shift_register : std_logic_vector(31 downto 0) := (others => '0');
@@ -87,25 +65,13 @@ begin
                 check(shift_register = x"c46516ae");
             end if;
 
+            if simulation_counter < test_frame'length-1 then
+                write_data_to_ram(write_port, simulation_counter, test_frame_s(simulation_counter));
+            end if;
+
         end if; -- rising_edge
     end process stimulus;	
 ------------------------------------------------------------------------
-    ram_test : process(simulator_clock)
-
-        function int ( std : std_logic_vector ) return natural is
-        begin
-            return to_integer(unsigned(std));
-        end int;
-        
-    begin
-        if rising_edge(simulator_clock) then
-            ram_read_out_port.ram_is_ready <= false;
-            if ram_read_control_port.read_is_enabled_when_1 = '1' then
-                ram_read_out_port.ram_is_ready <= true;
-                ram_read_out_port.byte_address <= ram_read_control_port.address;
-                ram_read_out_port.byte_from_ram <= test_frame_s(int(ram_read_control_port.address));
-            end if;
-
-        end if; --rising_edge
-    end process ram_test;	
+    u_test_ram : entity work.dpram
+    port map(simulator_clock, ram_read_control_port, ram_read_out_port, simulator_clock, write_port);
 end vunit_simulation;
