@@ -4,10 +4,14 @@ library ieee;
 
 package ethernet_frame_ram_read_pkg is
 ------------------------------------------------------------------------
-        type ram_read_control_group is record
+        type ram_read_control_record is record
             address : std_logic_vector(10 downto 0);
             read_is_enabled_when_1 : std_logic;
         end record; 
+
+        -- prevent syntax failures
+        alias ram_read_control_group is ram_read_control_record;
+        constant init_ram_read_port : ram_read_control_record := ((others => '0'), '0');
 ------------------------------------------------------------------------
         type ram_read_output_group is record
             ram_is_ready : boolean;
@@ -17,20 +21,20 @@ package ethernet_frame_ram_read_pkg is
 
     constant ram_read_output_init : ram_read_output_group := (false, (others => '0'), (others => '0'));
 ------------------------------------------------------------------------ 
-    function "+" ( left, right : ram_read_control_group)
-        return ram_read_control_group; 
+    function "+" ( left, right : ram_read_control_record)
+        return ram_read_control_record; 
 
 ------------------------------------------------------------------------ 
     procedure init_ram_read (
-        signal ram_read_control_port : out ram_read_control_group);
+        signal ram_read_control_port : out ram_read_control_record);
 ------------------------------------------------------------------------
     procedure read_data_from_ram (
-        signal ram_read_control_port : out ram_read_control_group;
+        signal ram_read_control_port : out ram_read_control_record;
         offset : natural;
         address : natural);
 ------------------------------------------------------------------------
     procedure read_data_from_ram (
-        signal ram_read_control_port : out ram_read_control_group;
+        signal ram_read_control_port : out ram_read_control_record;
         address : natural);
 ------------------------------------------------------------------------
     function get_ram_data ( ram_read_control_port_data_out : ram_read_output_group)
@@ -48,29 +52,28 @@ package ethernet_frame_ram_read_pkg is
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
-    type ram_reader is record
+    type ram_reader_record is record
         number_addresses_left_to_read : natural range 0 to 2**11-1;
         ram_read_address : natural range 0 to 2**11-1;
         ram_buffering_is_complete : boolean;
         ram_offset : natural range 0 to 2**11-1;
     end record;
 
-    constant ram_reader_init : ram_reader := (0, 0, false, 0);
+    constant init_ram_reader : ram_reader_record := (0, 0, false, 0);
 ------------------------------------------------------------------------
-    procedure create_ram_read_controller (
-        signal ram_read_control_port : out ram_read_control_group;
+    procedure create_ram_reader (
+        signal self : inout ram_reader_record;
+        signal ram_read_control_port : out ram_read_control_record;
         ram_output_port : in ram_read_output_group;
-        signal ram_controller : inout ram_reader;
         signal ram_shift_register : inout std_logic_vector);
 ------------------------------------------------------------------------
     procedure load_ram_with_offset_to_shift_register (
-        signal ram_controller : inout  ram_reader;
+        signal self : inout  ram_reader_record;
         start_address : natural;
         number_of_ram_addresses_to_be_read : natural);
 ------------------------------------------------------------------------
-    function ram_is_buffered_to_shift_register ( ram_controller : ram_reader)
+    function ram_is_buffered_to_shift_register ( self : ram_reader_record)
         return boolean;
-
 ------------------------------------------------------------------------
 end package ethernet_frame_ram_read_pkg;
 
@@ -79,7 +82,7 @@ package body ethernet_frame_ram_read_pkg is
 ------------------------------------------------------------------------
     procedure init_ram_read
     (
-        signal ram_read_control_port : out ram_read_control_group
+        signal ram_read_control_port : out ram_read_control_record
     ) is
     begin
         ram_read_control_port.read_is_enabled_when_1 <= '0'; 
@@ -89,7 +92,7 @@ package body ethernet_frame_ram_read_pkg is
 ------------------------------------------------------------------------
     procedure read_data_from_ram
     (
-        signal ram_read_control_port : out ram_read_control_group;
+        signal ram_read_control_port : out ram_read_control_record;
         address : natural
     ) is
     begin
@@ -100,7 +103,7 @@ package body ethernet_frame_ram_read_pkg is
 ------------------------------------------------------------------------
     procedure read_data_from_ram
     (
-        signal ram_read_control_port : out ram_read_control_group;
+        signal ram_read_control_port : out ram_read_control_record;
         offset : natural;
         address : natural
     ) is
@@ -145,64 +148,64 @@ package body ethernet_frame_ram_read_pkg is
     end load_ram_to_shift_register;
 
 ------------------------------------------------------------------------
-    procedure create_ram_read_controller
+    procedure create_ram_reader
     (
-        signal ram_read_control_port : out ram_read_control_group;
-        ram_output_port : in ram_read_output_group;
-        signal ram_controller : inout ram_reader;
-        signal ram_shift_register : inout std_logic_vector
+        signal self                  : inout ram_reader_record;
+        signal ram_read_control_port : out ram_read_control_record;
+        ram_output_port              : in ram_read_output_group;
+        signal ram_shift_register    : inout std_logic_vector
     ) is
     begin
         init_ram_read(ram_read_control_port);
         load_ram_to_shift_register(ram_output_port, ram_shift_register);
 
-        if ram_controller.ram_read_address < ram_controller.ram_offset then
-            ram_controller.ram_read_address <= ram_controller.ram_read_address + 1;
-            read_data_from_ram(ram_read_control_port, ram_controller.ram_read_address);
+        if self.ram_read_address < self.ram_offset then
+            self.ram_read_address <= self.ram_read_address + 1;
+            read_data_from_ram(ram_read_control_port, self.ram_read_address);
         end if;
 
-        ram_controller.ram_buffering_is_complete <= false;
+        self.ram_buffering_is_complete <= false;
         if ram_data_is_ready(ram_output_port) then
-            ram_controller.number_addresses_left_to_read <= ram_controller.number_addresses_left_to_read - 1;
-            if ram_controller.number_addresses_left_to_read = 1 then
-                ram_controller.ram_buffering_is_complete <= true;
+            self.number_addresses_left_to_read <= self.number_addresses_left_to_read - 1;
+            if self.number_addresses_left_to_read = 1 then
+                self.ram_buffering_is_complete <= true;
             end if;
         end if; 
         
-    end create_ram_read_controller; 
+    end create_ram_reader; 
 
 ------------------------------------------------------------------------
     procedure load_ram_with_offset_to_shift_register
     (
-        signal ram_controller : inout  ram_reader;
+        signal self : inout  ram_reader_record;
         start_address : natural;
         number_of_ram_addresses_to_be_read : natural
     ) is
     begin
-        ram_controller.ram_read_address              <= start_address;
-        ram_controller.number_addresses_left_to_read <= number_of_ram_addresses_to_be_read;
-        ram_controller.ram_offset                    <= start_address + number_of_ram_addresses_to_be_read;
+        self.ram_read_address              <= start_address;
+        self.number_addresses_left_to_read <= number_of_ram_addresses_to_be_read;
+        self.ram_offset                    <= start_address + number_of_ram_addresses_to_be_read;
 
     end load_ram_with_offset_to_shift_register;
 ------------------------------------------------------------------------
     function ram_is_buffered_to_shift_register
     (
-        ram_controller : ram_reader
+        self : ram_reader_record
     )
     return boolean
     is
     begin
-       return ram_controller.ram_buffering_is_complete; 
+       return self.ram_buffering_is_complete; 
     end ram_is_buffered_to_shift_register;
 ------------------------------------------------------------------------
 
     function "+"
     (
-        left, right : ram_read_control_group
+        left, right : ram_read_control_record
     )
-    return ram_read_control_group
+    return ram_read_control_record
     is
-        variable combined_port : ram_read_control_group;
+        variable combined_port : ram_read_control_record;
     begin
 
         combined_port.address := left.address OR right.address;

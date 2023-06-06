@@ -5,18 +5,20 @@ library ieee;
 package ethernet_frame_ram_write_pkg is
 
 ------------------------------------------------------------------------
-    type ram_write_control_group is record
+    type ram_write_control_record is record
         address              : std_logic_vector(10 downto 0);
         byte_to_write        : std_logic_vector(7 downto 0);
         write_enabled_when_1 : std_logic;
     end record; 
+
+    alias ram_write_control_group is ram_write_control_record;
 ------------------------------------------------------------------------
     
     procedure init_ram_write (
-        signal ram_write_port : out ram_write_control_group);
+        signal ram_write_port : out ram_write_control_record);
 ------------------------------------------------------------------------
     procedure write_data_to_ram (
-        signal ram_write_port : out ram_write_control_group;
+        signal ram_write_port : out ram_write_control_record;
         address : natural;
         byte_to_write : std_logic_vector(7 downto 0));
 ------------------------------------------------------------------------ 
@@ -28,7 +30,7 @@ package body ethernet_frame_ram_write_pkg is
 ------------------------------------------------------------------------ 
     procedure init_ram_write
     (
-        signal ram_write_port : out ram_write_control_group
+        signal ram_write_port : out ram_write_control_record
     ) is
     begin
         ram_write_port.write_enabled_when_1 <= '0';
@@ -39,7 +41,7 @@ package body ethernet_frame_ram_write_pkg is
 ------------------------------------------------------------------------ 
     procedure write_data_to_ram
     (
-        signal ram_write_port : out ram_write_control_group;
+        signal ram_write_port : out ram_write_control_record;
         address : natural;
         byte_to_write : std_logic_vector(7 downto 0)
     ) is

@@ -21,10 +21,13 @@ eth.add_source_files(ROOT / "ethernet_common/PCK_CRC_32_D8.vhd")
 
 eth.add_source_files(ROOT / "ethernet_common/dual_port_ethernet_ram/ethernet_frame_ram_write_pkg.vhd")
 eth.add_source_files(ROOT / "ethernet_frame_receiver/ethernet_frame_receiver_pkg.vhd")
+eth.add_source_files(ROOT / "ethernet_common/dual_port_ethernet_ram/ethernet_frame_ram_read_pkg.vhd")
+eth.add_source_files(ROOT / "ethernet_common/dual_port_ethernet_ram/ethernet_frame_ram_write_pkg.vhd")
 
 eth.add_source_files(ROOT / "testbenches/mdio_driver_simulation/tb_mdio_driver.vhd")
 eth.add_source_files(ROOT / "testbenches/mdio_driver_simulation/mdio_tb.vhd")
 
 eth.add_source_files(ROOT / "testbenches/ethernet_receiver/receiver_tb.vhd")
+eth.add_source_files(ROOT / "testbenches/receiver_ram/receiver_ram_tb.vhd")
 
 VU.main()

@@ -15,6 +15,9 @@ ghdl -a --ieee=synopsys --std=08 %source%/ethernet_rx_ddio/efinix_rx_ddio.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/ethernet_clocks_pkg.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/ethernet_common/PCK_CRC_32_D8.vhd
 
+ghdl -a --ieee=synopsys --std=08 %source%/ethernet_common/dual_port_ethernet_ram/ethernet_frame_ram_read_pkg.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/ethernet_common/dual_port_ethernet_ram/ethernet_frame_ram_write_pkg.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/ethernet_frame_receiver/ethernet_frame_receiver_pkg.vhd
+
+
 
