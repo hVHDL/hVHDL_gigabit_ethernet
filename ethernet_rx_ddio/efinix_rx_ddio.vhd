@@ -25,14 +25,14 @@ begin
         if rising_edge(clk) then
             ethernet_ddio_out <= (rx_ctl => (self.fpga_IO_HI(4), self.fpga_IO_LO(4)), 
                                   ethernet_rx_byte => 
-                                      (self.fpga_IO_LO(0) ,
-                                        self.fpga_IO_LO(1),
-                                        self.fpga_IO_LO(2),
-                                        self.fpga_IO_LO(3),
-                                        self.fpga_IO_HI(0),
-                                        self.fpga_IO_HI(1),
-                                        self.fpga_IO_HI(2),
-                                        self.fpga_IO_HI(3)), 
+                                      (self.fpga_IO_HI(3) ,
+                                       self.fpga_IO_HI(2),
+                                       self.fpga_IO_HI(1),
+                                       self.fpga_IO_HI(0),
+                                       self.fpga_IO_LO(3),
+                                       self.fpga_IO_LO(2),
+                                       self.fpga_IO_LO(1),
+                                       self.fpga_IO_LO(0)), 
                                     byte_is_ready => (std_logic_vector'(self.fpga_IO_HI(4), self.fpga_IO_LO(4)) = "11"));
                 
         end if; --rising_edge
