@@ -130,23 +130,6 @@ package body ethernet_frame_receiver_pkg is
         return self.receiver_ram_address;
     end get_received_byte_index;
 ------------------------------------------------------------------------
-    procedure write_crc_to_receiver_ram
-    (
-        signal self : inout ethernet_receiver_record;
-        signal ram_write : out ram_write_control_record
-    ) is
-    begin
-        if not receiver_is_active(self) then 
-            if self.crc_counter > 0 then
-                self.crc_counter <= self.crc_counter - 1;
-                self.crc32 <= self.crc32(23 downto 0) & x"ff";
-                write_data_to_ram(ram_write, get_received_byte_index(self), self.crc32(31 downto 24));
-                self.receiver_ram_address <= self.receiver_ram_address + 1;
-            end if;
-        end if;
-        
-    end write_crc_to_receiver_ram;
-------------------------------------------------------------------------
     procedure count_only_frame_bytes
     (
         signal self : inout ethernet_receiver_record
@@ -179,9 +162,24 @@ package body ethernet_frame_receiver_pkg is
     begin
         if receiver_is_active(self) then
             write_data_to_ram(ram_write, get_received_byte_index(self), get_received_byte(self));
-        else
-            write_crc_to_receiver_ram(self, ram_write);
+        end if;
+    end write_ethernet_frame_to_ram;
+------------------------------------------------------------------------
+    procedure write_crc_to_receiver_ram
+    (
+        signal self : inout ethernet_receiver_record;
+        signal ram_write : out ram_write_control_record
+    ) is
+    begin
+        if not receiver_is_active(self) then 
+            if self.crc_counter > 0 then
+                self.crc_counter <= self.crc_counter - 1;
+                self.crc32 <= self.crc32(23 downto 0) & x"ff";
+                write_data_to_ram(ram_write, get_received_byte_index(self), self.crc32(31 downto 24));
+                self.receiver_ram_address <= self.receiver_ram_address + 1;
+            end if;
         end if;
         
-    end write_ethernet_frame_to_ram;
+    end write_crc_to_receiver_ram;
+------------------------------------------------------------------------
 end package body ethernet_frame_receiver_pkg;
