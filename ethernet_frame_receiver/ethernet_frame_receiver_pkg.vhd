@@ -24,8 +24,7 @@ package ethernet_frame_receiver_pkg is
 ------------------------------------------------------------------------
     procedure create_ethernet_receiver (
         signal self      : inout ethernet_receiver_record;
-        enet_rx_ddio     : in ethernet_rx_ddio_data_output_group;
-        signal ram_write : out ram_write_control_record);
+        enet_rx_ddio     : in ethernet_rx_ddio_data_output_group);
 
 ------------------------------------------------------------------------
     function receiver_is_active ( self : ethernet_receiver_record)
@@ -42,6 +41,17 @@ package ethernet_frame_receiver_pkg is
     procedure write_crc_to_receiver_ram (
         signal self : inout ethernet_receiver_record;
         signal ram_write : out ram_write_control_record);
+------------------------------------------------------------------------
+    procedure count_only_frame_bytes (
+        signal self : inout ethernet_receiver_record);
+------------------------------------------------------------------------
+    procedure count_preamble_and_frame_bytes (
+        signal self : inout ethernet_receiver_record);
+------------------------------------------------------------------------
+    procedure write_ethernet_frame_to_ram (
+        signal self      : inout ethernet_receiver_record;
+        signal ram_write : out ram_write_control_record);
+------------------------------------------------------------------------
 
 end package ethernet_frame_receiver_pkg;
 
@@ -50,8 +60,7 @@ package body ethernet_frame_receiver_pkg is
     procedure create_ethernet_receiver
     (
         signal self      : inout ethernet_receiver_record;
-        enet_rx_ddio     : in ethernet_rx_ddio_data_output_group;
-        signal ram_write : out ram_write_control_record
+        enet_rx_ddio     : in ethernet_rx_ddio_data_output_group
     ) is
         variable enet_byte : std_logic_vector(7 downto 0);
         variable inverted_enet_byte : std_logic_vector(7 downto 0);
@@ -76,20 +85,8 @@ package body ethernet_frame_receiver_pkg is
             self.crc_counter <= 4;
         else
             self.frame_detected <= false;
-
         end if;
     ------------------------------
-        if receiver_is_active(self) then
-            if self.receiver_ram_address < 2**10-1 then
-                self.receiver_ram_address <= self.receiver_ram_address + 1;
-            end if;
-        end if;
-
-        if receiver_is_active(self) then
-            write_data_to_ram(ram_write, get_received_byte_index(self), get_received_byte(self));
-        else
-            write_crc_to_receiver_ram(self, ram_write);
-        end if;
         
     end create_ethernet_receiver;
 
@@ -150,4 +147,41 @@ package body ethernet_frame_receiver_pkg is
         
     end write_crc_to_receiver_ram;
 ------------------------------------------------------------------------
+    procedure count_only_frame_bytes
+    (
+        signal self : inout ethernet_receiver_record
+    ) is
+    begin
+        if self.frame_detected then
+            if self.receiver_ram_address < 2**10-1 then
+                self.receiver_ram_address <= self.receiver_ram_address + 1;
+            end if;
+        end if;
+    end count_only_frame_bytes;
+------------------------------------------------------------------------
+    procedure count_preamble_and_frame_bytes
+    (
+        signal self : inout ethernet_receiver_record
+    ) is
+    begin
+        if receiver_is_active(self) then
+            if self.receiver_ram_address < 2**10-1 then
+                self.receiver_ram_address <= self.receiver_ram_address + 1;
+            end if;
+        end if;
+    end count_preamble_and_frame_bytes;
+------------------------------------------------------------------------
+    procedure write_ethernet_frame_to_ram
+    (
+        signal self      : inout ethernet_receiver_record;
+        signal ram_write : out ram_write_control_record
+    ) is
+    begin
+        if receiver_is_active(self) then
+            write_data_to_ram(ram_write, get_received_byte_index(self), get_received_byte(self));
+        else
+            write_crc_to_receiver_ram(self, ram_write);
+        end if;
+        
+    end write_ethernet_frame_to_ram;
 end package body ethernet_frame_receiver_pkg;
