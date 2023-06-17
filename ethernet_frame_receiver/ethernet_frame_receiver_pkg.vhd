@@ -21,18 +21,23 @@ package ethernet_frame_receiver_pkg is
     end record;
 
     constant init_ethernet_receiver : ethernet_receiver_record := ((others => '0'), (others => '1'), false, 0, 0, 0,false, false, (others => '0'));
-
+------------------------------------------------------------------------
     procedure create_ethernet_receiver (
         signal self      : inout ethernet_receiver_record;
         enet_rx_ddio     : in ethernet_rx_ddio_data_output_group;
         signal ram_write : out ram_write_control_record);
 
-    procedure idle_transmitter (
-        signal ddio_hi, ddio_lo : out std_logic_vector(4 downto 0));
+------------------------------------------------------------------------
+    function receiver_is_active ( self : ethernet_receiver_record)
+        return boolean;
 
-    procedure transmit_byte (
-        signal ddio_hi, ddio_lo : out std_logic_vector(4 downto 0);
-        byte : in std_logic_vector(7 downto 0));
+------------------------------------------------------------------------
+    function get_received_byte ( self : ethernet_receiver_record)
+        return std_logic_vector;
+
+------------------------------------------------------------------------
+    function get_received_byte_index ( self : ethernet_receiver_record )
+        return natural;
 
 end package ethernet_frame_receiver_pkg;
 
@@ -76,39 +81,56 @@ package body ethernet_frame_receiver_pkg is
             end if;
         end if;
     ------------------------------
-        if self.rx_is_active then
+        if receiver_is_active(self) then
             if self.receiver_ram_address < 2**10-1 then
                 self.receiver_ram_address <= self.receiver_ram_address + 1;
-                if self.frame_detected then
-                    write_data_to_ram(ram_write, self.receiver_ram_address, inverted_enet_byte);
-                else
-                    write_data_to_ram(ram_write, self.receiver_ram_address, enet_byte);
-                end if;
             end if;
+        end if;
+
+        if receiver_is_active(self) then
+            write_data_to_ram(ram_write, get_received_byte_index(self), get_received_byte(self));
         end if;
         
     end create_ethernet_receiver;
 
 ------------------------------------------------------------------------
-        procedure transmit_byte
-        (
-            signal ddio_hi, ddio_lo : out std_logic_vector(4 downto 0);
-            byte : in std_logic_vector(7 downto 0)
-        ) is
-        begin
-            ddio_hi <= '1' & byte(7 downto 4);
-            ddio_lo <= '1' & byte(3 downto 0);
-            
-        end transmit_byte;
+    function receiver_is_active
+    (
+        self : ethernet_receiver_record
+    )
+    return boolean
+    is
+    begin
+        return self.rx_is_active;
+    end receiver_is_active;
+------------------------------------------------------------------------
+    function get_received_byte
+    (
+        self : ethernet_receiver_record
+    )
+    return std_logic_vector 
+    is
+        variable return_value : std_logic_vector(7 downto 0);
+        
+    begin
+        if self.frame_detected then
+            return_value := self.inverted_byte;
+        else
+            return_value := self.shift_register(7 downto 0);
+        end if;
 
-        procedure idle_transmitter
-        (
-            signal ddio_hi, ddio_lo : out std_logic_vector(4 downto 0)
-        ) is
-        begin
-            ddio_hi <= '0' & x"0";
-            ddio_lo <= '0' & x"0";
-            
-        end idle_transmitter;
-
+        return return_value;
+        
+    end get_received_byte;
+------------------------------------------------------------------------
+    function get_received_byte_index
+    (
+        self : ethernet_receiver_record 
+    )
+    return natural
+    is
+    begin
+        return self.receiver_ram_address;
+    end get_received_byte_index;
+------------------------------------------------------------------------
 end package body ethernet_frame_receiver_pkg;
