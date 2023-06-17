@@ -27,6 +27,8 @@ architecture vunit_simulation of ethernet_frame_transmitter_tb is
     signal crc32 : std_logic_vector(31 downto 0) := (others => '1');
     signal crc32_output : std_logic_vector(31 downto 0) := (others => '0');
 
+    signal crc_successful : boolean := false;
+
 begin
 
 ------------------------------------------------------------------------
@@ -34,6 +36,9 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         wait for simtime_in_clocks*clock_period;
+        -- if run("crc was calculated correctly") then
+            check(crc_successful, "checksum was not 2411df1c");
+        -- end if;
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
     end process simtime;	
@@ -87,6 +92,10 @@ begin
                 crc_output := nextCRC32_D8(swap_bytes(example_frame(example_frame'left)), crc32);
                 crc32        <= crc_output;
                 crc32_output <= not reverse_bit_order(crc_output);
+            end if;
+
+            if simulation_counter = example_frame'high + 1 then
+                crc_successful <= (crc32_output = x"2144df1c");
             end if;
 
         end if; -- rising_edge
