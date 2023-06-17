@@ -32,4 +32,6 @@ eth.add_source_files(ROOT / "testbenches/mdio_driver_simulation/mdio_tb.vhd")
 eth.add_source_files(ROOT / "testbenches/ethernet_receiver/receiver_tb.vhd")
 eth.add_source_files(ROOT / "testbenches/receiver_ram/receiver_ram_tb.vhd")
 
+eth.add_source_files(ROOT / "testbenches/ethernet_frame_transmitter/ethernet_frame_transmitter_tb.vhd")
+
 VU.main()
