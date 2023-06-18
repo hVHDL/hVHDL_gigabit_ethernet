@@ -4,22 +4,27 @@ library ieee;
 
 package ethernet_frame_ram_read_pkg is
 ------------------------------------------------------------------------
-        type ram_read_control_record is record
-            address : std_logic_vector(10 downto 0);
-            read_is_enabled_when_1 : std_logic;
-        end record; 
+    type ram_read_control_record is record
+        address : std_logic_vector(10 downto 0);
+        read_is_enabled_when_1 : std_logic;
+    end record; 
 
-        -- prevent syntax failures
-        alias ram_read_control_group is ram_read_control_record;
-        constant init_ram_read_port : ram_read_control_record := ((others => '0'), '0');
+    -- prevent syntax failures
+    alias ram_read_control_group is ram_read_control_record;
+    constant init_ram_read_port : ram_read_control_record := ((others => '0'), '0');
 ------------------------------------------------------------------------
-        type ram_read_output_group is record
-            ram_is_ready : boolean;
-            byte_address : std_logic_vector(10 downto 0);
-            byte_from_ram : std_logic_vector(7 downto 0);
-        end record;
+    type ram_read_output_record is record
+        ram_is_ready : boolean;
+        byte_address : std_logic_vector(10 downto 0);
+        byte_from_ram : std_logic_vector(7 downto 0);
+    end record;
 
+    alias ram_read_output_group is ram_read_output_record;
     constant ram_read_output_init : ram_read_output_group := (false, (others => '0'), (others => '0'));
+    alias init_ram_read_output is ram_read_output_init;
+------------------------------------------------------------------------ 
+    procedure init_ram_read_output_port (
+        signal output_port : out ram_read_output_record);
 ------------------------------------------------------------------------ 
     function "+" ( left, right : ram_read_control_record)
         return ram_read_control_record; 
@@ -147,6 +152,14 @@ package body ethernet_frame_ram_read_pkg is
 
     end load_ram_to_shift_register;
 
+------------------------------------------------------------------------
+    procedure init_ram_read_output_port
+    (
+        signal output_port : out ram_read_output_record
+    ) is
+    begin
+        output_port <= init_ram_read_output;
+    end init_ram_read_output_port;
 ------------------------------------------------------------------------
     procedure create_ram_reader
     (
