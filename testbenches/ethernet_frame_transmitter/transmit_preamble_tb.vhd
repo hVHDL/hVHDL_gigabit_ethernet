@@ -106,13 +106,10 @@ begin
                 output <= get_ram_data(ram_read_output);
             end if;
 
-
-
             case simulation_counter is
                 WHEN 7 => preamble_counter <= 8;
                 when others => --do nothing
             end case;
-
 
             test_shift_register <= test_shift_register(test_shift_register'left  -1 downto 0) & output;
             example_frame <= example_frame(1 to example_frame'right) & output;

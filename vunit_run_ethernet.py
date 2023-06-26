@@ -35,5 +35,6 @@ eth.add_source_files(ROOT / "testbenches/receiver_ram/receiver_ram_tb.vhd")
 eth.add_source_files(ROOT / "testbenches/ethernet_frame_transmitter/ethernet_frame_transmitter_tb.vhd")
 
 eth.add_source_files(ROOT / "testbenches/ethernet_frame_transmitter/transmit_preamble_tb.vhd")
+eth.add_source_files(ROOT / "testbenches/ethernet_frame_transmitter/transmit_fifo_tb.vhd")
 
 VU.main()
