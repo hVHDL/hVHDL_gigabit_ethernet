@@ -49,23 +49,25 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         wait for simtime_in_clocks*clock_period;
-        -- if run("crc was calculated correctly") then
+
+        if run("crc") then
             check(crc_successful, "checksum was not 2144df1c");
-        -- end if;
+        end if;
+
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
     end process simtime;	
 
     simulator_clock <= not simulator_clock after clock_period/2.0;
 ------------------------------------------------------------------------
-    crc32        <= frame_transmitter.crc32;
-    crc32_output <= frame_transmitter.crc32_output;
 
     get_output : process(frame_transmitter)
     begin
         if transmitter_is_requested(frame_transmitter) then
             byte_out <= get_word_to_be_transmitted(frame_transmitter);
         end if;
+        crc32        <= frame_transmitter.crc32;
+        crc32_output <= frame_transmitter.crc32_output;
     end process get_output;	
 
     stimulus : process(simulator_clock)
