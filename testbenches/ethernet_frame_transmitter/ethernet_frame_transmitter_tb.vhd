@@ -6,7 +6,6 @@ LIBRARY ieee  ;
 library vunit_lib;
 context vunit_lib.vunit_context;
 
-    use work.PCK_CRC32_D8.all;
     use work.frame_transmitter_pkg.all;
 
     use work.transmit_test_pkg.bytearray;
