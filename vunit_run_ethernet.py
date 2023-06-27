@@ -19,6 +19,9 @@ eth.add_source_files(ROOT / "ethernet_rx_ddio/ethernet_rx_ddio_pkg.vhd")
 eth.add_source_files(ROOT / "ethernet_clocks_pkg.vhd")
 eth.add_source_files(ROOT / "ethernet_common/PCK_CRC_32_D8.vhd")
 
+eth.add_source_files(ROOT / "fifo/fifo_pkg.vhd")
+eth.add_source_files(ROOT / "fifo/fifo.vhd")
+
 eth.add_source_files(ROOT / "ethernet_common/dual_port_ethernet_ram/ethernet_frame_ram_write_pkg.vhd")
 eth.add_source_files(ROOT / "ethernet_frame_receiver/ethernet_frame_receiver_pkg.vhd")
 eth.add_source_files(ROOT / "ethernet_common/dual_port_ethernet_ram/ethernet_frame_ram_read_pkg.vhd")
