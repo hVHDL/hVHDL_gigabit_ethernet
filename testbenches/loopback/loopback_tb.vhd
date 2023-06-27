@@ -7,6 +7,8 @@ library vunit_lib;
 context vunit_lib.vunit_context;
 
     use work.fifo_pkg.all;
+    use work.transmit_test_pkg.bytearray;
+    use work.transmit_test_pkg.c_example_frame;
 
 entity loopback_tb is
   generic (runner_cfg : string);
@@ -27,6 +29,9 @@ architecture vunit_simulation of loopback_tb is
     signal fifo_write_out : fifo_write_output_record;
     signal reset : std_logic := '1';
 
+    signal fill_counter : natural range 0 to RAM_DEPTH-1 := 0;
+    signal fifo_was_filled : boolean := false;
+
 begin
 
 ------------------------------------------------------------------------
@@ -34,6 +39,9 @@ begin
     begin
         test_runner_setup(runner, runner_cfg);
         wait for simtime_in_clocks*clock_period;
+        if run("fifo_was_filled") then
+            check(fifo_was_filled, "fifo was not filled");
+        end if;
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
     end process simtime;	
@@ -47,7 +55,20 @@ begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
             reset <= '0';
+            init_fifo_read(fifo_read_in);
+            init_fifo_write(fifo_write_in);
 
+            if simulation_counter = 10 then
+                fill_counter <= c_example_frame'high;
+            end if;
+            if fill_counter > 0 then
+                fill_counter <= fill_counter - 1;
+                write_data_to_fifo(fifo_write_in, c_example_frame(c_example_frame'high - fill_counter));
+            end if;
+
+            if get_number_of_words_in_fifo(fifo_read_out) = c_example_frame'high then
+                fifo_was_filled <= true;
+            end if;
 
         end if; -- rising_edge
     end process stimulus;	
