@@ -28,7 +28,7 @@ architecture vunit_simulation of transmit_fifo_tb is
     signal fifo_write_out : fifo_write_output_record;
     signal reset : std_logic := '1';
 
-    signal catch_data : natural := 0;
+    signal number_of_fifo_words : natural := 0;
 
     type std8_array is array (integer range 0 to 7) of std_logic_vector(7 downto 0);
     constant check_values : std8_array := (0 => x"ab", 1 => x"cd", 2 => x"ef", others => x"00"); 
@@ -41,7 +41,7 @@ begin
         test_runner_setup(runner, runner_cfg);
         wait for simtime_in_clocks*clock_period;
         if run("3_words_were_read_from_fifo") then
-            check(catch_data = 3, "expected 3, got " & integer'image(catch_data));
+            check(number_of_fifo_words = 3, "expected 3, got " & integer'image(number_of_fifo_words));
         end if;
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
@@ -61,7 +61,7 @@ begin
             CASE simulation_counter is
                 WHEN 10 => write_data_to_fifo(fifo_write_in, check_values(0));
                 WHEN 11 => write_data_to_fifo(fifo_write_in, check_values(1));
-                WHEN 12 => write_data_to_fifo(fifo_write_in, check_values(2));
+                WHEN 16 => write_data_to_fifo(fifo_write_in, check_values(2));
                 WHEN others => --do nothing
             end CASE;
 
@@ -72,8 +72,8 @@ begin
             end if;
 
             if fifo_read_is_ready(fifo_read_out) then
-                catch_data <= catch_data + 1;
-                check(check_values(catch_data) = get_data_from_fifo(fifo_read_out));
+                number_of_fifo_words <= number_of_fifo_words + 1;
+                check(check_values(number_of_fifo_words) = get_data_from_fifo(fifo_read_out));
             end if;
 
         end if; -- rising_edge
