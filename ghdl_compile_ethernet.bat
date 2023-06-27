@@ -2,8 +2,6 @@ echo off
 
 SET source=%1
 
-ghdl -a --ieee=synopsys --std=08 %source%/fifo/fifo_pkg.vhd
-ghdl -a --ieee=synopsys --std=08 %source%/fifo/fifo.vhd
 
 ghdl -a --ieee=synopsys --std=08 %source%/mdio_driver/mdio_three_state_io_driver/mdio_three_state_io_driver_pkg.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/mdio_driver/mdio_driver_pkg.vhd
@@ -21,7 +19,14 @@ ghdl -a --ieee=synopsys --std=08 %source%/ethernet_common/dual_port_ethernet_ram
 ghdl -a --ieee=synopsys --std=08 %source%/ethernet_common/dual_port_ethernet_ram/ethernet_frame_ram_write_pkg.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/ethernet_common/dual_port_ethernet_ram/dpram.vhd
 
+ghdl -a --ieee=synopsys --std=08 %source%/fifo/fifo_pkg.vhd
+ghdl -a --ieee=synopsys --std=08 %source%/fifo/fifo.vhd
+
+ghdl -a --ieee=synopsys --std=08 %source%/frame_transmitter/frame_transmitter_pkg.vhd
+
 ghdl -a --ieee=synopsys --std=08 %source%/ethernet_frame_receiver/ethernet_frame_receiver_pkg.vhd
+
+ghdl -a --ieee=synopsys --std=08 %source%/testbenches/transmit_test_pkg.vhd
 
 
 
