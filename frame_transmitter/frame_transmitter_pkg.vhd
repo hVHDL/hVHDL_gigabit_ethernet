@@ -103,7 +103,7 @@ package body frame_transmitter_pkg is
         word_to_transmit : std_logic_vector(7 downto 0)
     ) is
     begin
-        self.output_byte <= word_to_transmit;
+        self.output_byte       <= word_to_transmit;
         self.shift_register(0) <= '1';
     end transmit_word;
 --------------------------------------------------
@@ -127,7 +127,7 @@ package body frame_transmitter_pkg is
         if frame_has_been_transmitted(self) then
             return_value := false;
         else
-            return_value := (self.shift_register /= 0 and self.shift_register /= 1);
+            return_value := (self.shift_register /= 0);
         end if;
         return return_value;
     end transmitter_is_requested;

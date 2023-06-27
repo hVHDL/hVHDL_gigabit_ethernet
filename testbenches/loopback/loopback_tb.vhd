@@ -240,7 +240,7 @@ begin
                 load_data_to_transmit_fifo(tx_in, c_example_frame(number_of_words_in_frame - fill_counter));
             end if;
 
-            if fill_counter = 2 then
+            if fill_counter = 10 then
                 request_ethernet_frame(tx_in);
             end if;
         end if; -- rising_edge
