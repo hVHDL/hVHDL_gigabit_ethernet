@@ -42,6 +42,8 @@ begin
         wait for simtime_in_clocks*clock_period;
         if run("3_words_were_read_from_fifo") then
             check(number_of_fifo_words = 3, "expected 3, got " & integer'image(number_of_fifo_words));
+        elsif run("check_for_zero_words_in_fifo") then
+            check(get_number_of_words_in_fifo(fifo_read_out) = 0);
         end if;
         test_runner_cleanup(runner); -- Simulation ends here
         wait;
