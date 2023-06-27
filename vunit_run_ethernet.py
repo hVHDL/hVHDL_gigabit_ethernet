@@ -30,7 +30,10 @@ eth.add_source_files(ROOT / "ethernet_common/dual_port_ethernet_ram/ethernet_fra
 eth.add_source_files(ROOT / "ethernet_common/dual_port_ethernet_ram/dpram.vhd")
 
 eth.add_source_files(ROOT / "frame_transmitter/frame_transmitter_pkg.vhd")
+eth.add_source_files(ROOT / "ethernet_tx/ethernet_tx_pkg.vhd")
+eth.add_source_files(ROOT / "ethernet_tx/ethernet_tx.vhd")
 
+# testbenches
 eth.add_source_files(ROOT / "testbenches/mdio_driver_simulation/tb_mdio_driver.vhd")
 eth.add_source_files(ROOT / "testbenches/mdio_driver_simulation/mdio_tb.vhd")
 
