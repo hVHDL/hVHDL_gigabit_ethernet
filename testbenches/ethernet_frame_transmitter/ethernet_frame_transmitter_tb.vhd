@@ -29,8 +29,6 @@ architecture vunit_simulation of ethernet_frame_transmitter_tb is
     signal crc_successful : boolean := false;
 
     signal frame_transmitter : frame_transmitter_record := init_frame_transmitter;
-    signal crc32        : std_logic_vector(31 downto 0) := (others => '1');
-    signal crc32_output : std_logic_vector(31 downto 0) := (others => '0');
     signal output_byte  : std_logic_vector(7 downto 0);
 
     signal shift_counter : natural :=0;
@@ -39,6 +37,9 @@ architecture vunit_simulation of ethernet_frame_transmitter_tb is
     signal transmit_counter : natural := 0;
 
     signal output_shift_register : std_logic_vector(31 downto 0);
+
+    signal transmitter_requested : boolean := false;
+    signal transmitter_ready : boolean := false;
 
 
 begin
@@ -60,15 +61,6 @@ begin
     simulator_clock <= not simulator_clock after clock_period/2.0;
 ------------------------------------------------------------------------
 
-    get_output : process(frame_transmitter)
-    begin
-        if transmitter_is_requested(frame_transmitter) then
-            byte_out <= get_word_to_be_transmitted(frame_transmitter);
-        end if;
-        crc32        <= frame_transmitter.crc32;
-        crc32_output <= frame_transmitter.crc32_output;
-    end process get_output;	
-
     stimulus : process(simulator_clock)
     begin
         if rising_edge(simulator_clock) then
@@ -85,10 +77,19 @@ begin
                 when others => --do nothing
             end case;
 
-            output_shift_register <= get_word_to_be_transmitted(frame_transmitter) & output_shift_register(31 downto 8);
+            if transmitter_is_requested(frame_transmitter) then
+                byte_out              <= get_word_to_be_transmitted(frame_transmitter);
+                output_shift_register <= get_word_to_be_transmitted(frame_transmitter) & output_shift_register(31 downto 8);
+            else
+                byte_out              <= x"ff";
+            end if;
+
             if frame_has_been_transmitted(frame_transmitter) then
                 crc_successful <= (output_shift_register = x"2144df1c");
             end if;
+
+            transmitter_requested <= transmitter_is_requested(frame_transmitter);
+            transmitter_ready     <= frame_has_been_transmitted(frame_transmitter);
 
         end if; -- rising_edge
     end process stimulus;	

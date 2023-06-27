@@ -122,8 +122,14 @@ package body frame_transmitter_pkg is
     )
     return boolean
     is
+        variable return_value : boolean;
     begin
-        return self.shift_register /= 0 and self.shift_register /= 1;
+        if frame_has_been_transmitted(self) then
+            return_value := false;
+        else
+            return_value := (self.shift_register /= 0 and self.shift_register /= 1);
+        end if;
+        return return_value;
     end transmitter_is_requested;
 --------------------------------------------------
     function get_word_to_be_transmitted

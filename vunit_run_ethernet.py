@@ -44,6 +44,7 @@ eth.add_source_files(ROOT / "testbenches/transmit_test_pkg.vhd")
 eth.add_source_files(ROOT / "testbenches/ethernet_frame_transmitter/transmit_preamble_tb.vhd")
 eth.add_source_files(ROOT / "testbenches/ethernet_frame_transmitter/transmit_fifo_tb.vhd")
 
+eth.add_source_files(ROOT / "testbenches/loopback/tx_fifo_tb.vhd")
 eth.add_source_files(ROOT / "testbenches/loopback/loopback_tb.vhd")
 
 VU.main()
