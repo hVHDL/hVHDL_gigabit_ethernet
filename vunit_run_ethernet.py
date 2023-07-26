@@ -41,6 +41,7 @@ eth.add_source_files(ROOT / "testbenches/ethernet_receiver/receiver_tb.vhd")
 eth.add_source_files(ROOT / "testbenches/receiver_ram/receiver_ram_tb.vhd")
 
 eth.add_source_files(ROOT / "testbenches/ethernet_frame_transmitter/ethernet_frame_transmitter_tb.vhd")
+eth.add_source_files(ROOT / "testbenches/ethernet_frame_transmitter/transmitter_with_fifo_tb.vhd")
 
 eth.add_source_files(ROOT / "testbenches/transmit_test_pkg.vhd")
 
