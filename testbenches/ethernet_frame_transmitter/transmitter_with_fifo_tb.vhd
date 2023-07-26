@@ -68,19 +68,21 @@ begin
 
     simulator_clock <= not simulator_clock after clock_period/2.0;
 ------------------------------------------------------------------------
-
+    u_fifo : entity work.fifo
+    port map(simulator_clock, reset, fifo_read_in, fifo_read_out, fifo_write_in, fifo_write_out);
+------------------------------------------------------------------------
     stimulus : process(simulator_clock)
     begin
         if rising_edge(simulator_clock) then
             simulation_counter <= simulation_counter + 1;
-------------------------------------------------------------------------
+    ------------------------------------------------------------------------
             -- fifo setup
             init_fifo_read(fifo_read_in);
             init_fifo_write(fifo_write_in);
             reset <= '0';
-------------------------------------------------------------------------
+    ------------------------------------------------------------------------
             create_frame_transmitter(frame_transmitter);
-------------------------------------------------------------------------
+    ------------------------------------------------------------------------
             -- test code
             case simulation_counter is
                 WHEN 15 => transmit_counter <= example_frame'high + 1;
@@ -91,7 +93,6 @@ begin
                 transmit_counter <= transmit_counter - 1;
                 example_frame <= example_frame(example_frame'left+1 to example_frame'right) & x"00";
                 write_data_to_fifo(fifo_write_in, example_frame(example_frame'left));
-                -- transmit_word(frame_transmitter, example_frame(example_frame'left));
             end if;
 
             if transmit_counter = 0 and fifo_can_be_read(fifo_read_out) then
@@ -118,8 +119,5 @@ begin
 
         end if; -- rising_edge
     end process stimulus;	
-------------------------------------------------------------------------
-    u_fifo : entity work.fifo
-    port map(simulator_clock, reset, fifo_read_in, fifo_read_out, fifo_write_in, fifo_write_out);
 ------------------------------------------------------------------------
 end vunit_simulation;

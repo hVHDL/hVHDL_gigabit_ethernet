@@ -37,6 +37,11 @@ architecture rtl of ethernet_tx is
 
 begin
 
+
+------------------------------------------------------------------------
+    u_fifo : entity work.fifo
+    port map(clock, reset, fifo_read_in, fifo_read_out, fifo_write_in, fifo_write_out);
+------------------------------------------------------------------------
     process(clock)
     begin
         if rising_edge(clock) then
@@ -46,6 +51,7 @@ begin
             if tx_in.load_data then
                 write_data_to_fifo(fifo_write_in, tx_in.byte_in);
             end if;
+            tx_out.frame_has_been_transmitted <= frame_has_been_transmitted(frame_transmitter);
 
             byte_out     <= x"ff";
             tx_is_active <= false;
@@ -98,12 +104,4 @@ begin
 
         end if; --rising_edge
     end process;	
-
-
-------------------------------------------------------------------------
-    u_fifo : entity work.fifo
-    port map(clock, reset, fifo_read_in, fifo_read_out, fifo_write_in, fifo_write_out);
-------------------------------------------------------------------------
 end rtl;
-------------------------------------------------------------------------
-------------------------------------------------------------------------

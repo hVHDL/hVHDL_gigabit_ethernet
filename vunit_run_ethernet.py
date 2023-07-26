@@ -50,5 +50,6 @@ eth.add_source_files(ROOT / "testbenches/ethernet_frame_transmitter/transmit_fif
 
 eth.add_source_files(ROOT / "testbenches/loopback/tx_fifo_tb.vhd")
 eth.add_source_files(ROOT / "testbenches/loopback/loopback_tb.vhd")
+eth.add_source_files(ROOT / "testbenches/ethernet_tx/ethernet_tx_tb.vhd")
 
 VU.main()
