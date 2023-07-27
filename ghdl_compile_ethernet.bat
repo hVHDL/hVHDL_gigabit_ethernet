@@ -29,6 +29,9 @@ ghdl -a --ieee=synopsys --std=08 %source%/ethernet_frame_receiver/ethernet_frame
 ghdl -a --ieee=synopsys --std=08 %source%/ethernet_tx/ethernet_tx_pkg.vhd
 ghdl -a --ieee=synopsys --std=08 %source%/ethernet_tx/ethernet_tx.vhd
 
+ghdl -a --ieee=synopsys --std=08 %source%/ethernet_rx/ethernet_rx_pkg.vhd
+ghdl -a --ieee=synopsys --std=08 %source%/ethernet_rx/ethernet_rx.vhd
+
 ghdl -a --ieee=synopsys --std=08 %source%/testbenches/transmit_test_pkg.vhd
 
 
