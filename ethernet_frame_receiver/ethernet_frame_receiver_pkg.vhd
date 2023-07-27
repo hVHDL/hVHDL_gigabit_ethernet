@@ -18,9 +18,10 @@ package ethernet_frame_receiver_pkg is
         frame_was_received       : boolean;
         rx_is_active             : boolean;
         inverted_byte            : std_logic_vector(7 downto 0);
+        is_ready       : boolean;
     end record;
 
-    constant init_ethernet_receiver : ethernet_receiver_record := ((others => '0'), (others => '1'), false, 0, 0, 0,false, false, (others => '0'));
+    constant init_ethernet_receiver : ethernet_receiver_record := ((others => '0'), (others => '1'), false, 0, 0, 0,false, false, (others => '0'), false);
 ------------------------------------------------------------------------
     procedure create_ethernet_receiver (
         signal self      : inout ethernet_receiver_record;
@@ -30,6 +31,8 @@ package ethernet_frame_receiver_pkg is
     function receiver_is_active ( self : ethernet_receiver_record)
         return boolean;
 
+    function receiver_is_ready ( self : ethernet_receiver_record)
+        return boolean;
 ------------------------------------------------------------------------
     function get_received_byte ( self : ethernet_receiver_record)
         return std_logic_vector;
@@ -63,7 +66,6 @@ package body ethernet_frame_receiver_pkg is
         enet_rx_ddio     : in ethernet_rx_ddio_data_output_group
     ) is
         variable enet_byte : std_logic_vector(7 downto 0);
-        variable inverted_enet_byte : std_logic_vector(7 downto 0);
     begin
 
         self.rx_is_active <= ethernet_rx_is_active(enet_rx_ddio);
@@ -72,7 +74,6 @@ package body ethernet_frame_receiver_pkg is
             self.inverted_byte  <= get_byte_with_inverted_bit_order(enet_rx_ddio);
 
             enet_byte          := self.shift_register(7 downto 0);
-            inverted_enet_byte := self.inverted_byte;
 
             if self.shift_register = x"aaab" then
                 self.frame_detected <= true;
@@ -86,10 +87,20 @@ package body ethernet_frame_receiver_pkg is
         else
             self.frame_detected <= false;
         end if;
+        self.is_ready <= self.rx_is_active and (ethernet_rx_is_active(enet_rx_ddio) = false);
     ------------------------------
-        
     end create_ethernet_receiver;
 
+------------------------------------------------------------------------
+    function receiver_is_ready
+    (
+        self : ethernet_receiver_record
+    )
+    return boolean
+    is
+    begin
+        return self.is_ready;
+    end receiver_is_ready;
 ------------------------------------------------------------------------
     function receiver_is_active
     (

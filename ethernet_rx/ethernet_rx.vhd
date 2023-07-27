@@ -23,10 +23,12 @@ end entity ethernet_rx;
 
 architecture rtl of ethernet_rx is
 
-    signal self : ethernet_receiver_record := init_ethernet_receiver;
+    signal ethernet_receiver : ethernet_receiver_record := init_ethernet_receiver;
     signal ethernet_ddio_out : ethernet_rx_ddio_data_output_group;
 
     signal ram_is_being_flushed : boolean := false;
+
+    signal ctl_buffer : std_logic_vector(1 downto 0) := "00";
 
 begin
 
@@ -35,33 +37,35 @@ begin
     port map(clock, (ddio_input(9 downto 5), ddio_input(4 downto 0)), ethernet_ddio_out);
 ------------------------------------------------------------------------
     process(clock) is
+        variable ctl : std_logic_vector(1 downto 0);
     begin
         if rising_edge(clock) then
-            create_ethernet_receiver(self, ethernet_ddio_out);
-            -- count_only_frame_bytes(self);
-            count_preamble_and_frame_bytes(self);
+            rx_out.frame_is_received <= receiver_is_ready(ethernet_receiver);
+            create_ethernet_receiver(ethernet_receiver, ethernet_ddio_out);
+            -- count_only_frame_bytes(ethernet_receiver);
+            count_preamble_and_frame_bytes(ethernet_receiver);
 
             init_ram_write(write_port);
-            write_ethernet_frame_to_ram(self, write_port);
+            write_ethernet_frame_to_ram(ethernet_receiver, write_port);
 
             if g_write_crc_to_receiver_ram then
-                write_crc_to_receiver_ram(self, write_port);
+                write_crc_to_receiver_ram(ethernet_receiver, write_port);
             end if;
 
             rx_out.ram_is_flushed <= false;
             if empty_ram then
                 ram_is_being_flushed <= true;
-                self.receiver_ram_address <= 0;
+                ethernet_receiver.receiver_ram_address <= 0;
             end if;
 
             if ram_is_being_flushed then
-                if self.receiver_ram_address < 2**10-1 then
-                    self.receiver_ram_address <= self.receiver_ram_address + 1;
-                    write_data_to_ram(write_port, self.receiver_ram_address, x"00");
+                if ethernet_receiver.receiver_ram_address < 2**10-1 then
+                    ethernet_receiver.receiver_ram_address <= ethernet_receiver.receiver_ram_address + 1;
+                    write_data_to_ram(write_port, ethernet_receiver.receiver_ram_address, x"00");
                 else
                     rx_out.ram_is_flushed <= true;
                     ram_is_being_flushed <= false;
-                    self.receiver_ram_address <= 0;
+                    ethernet_receiver.receiver_ram_address <= 0;
                 end if;
             end if;
         end if;

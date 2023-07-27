@@ -67,11 +67,11 @@ begin
                     tx_is_active <= true;
                     if preamble_counter < 8 then
                         preamble_counter <= preamble_counter + 1;
-                        byte_out <= x"aa";
+                        byte_out <= x"55";
                     end if;
 
                     if preamble_counter = 7 then
-                        byte_out      <= x"ab";
+                        byte_out      <= x"d5";
                         tx_state <= transmit_frame;
                     end if;
 

@@ -33,6 +33,12 @@ eth.add_source_files(ROOT / "frame_transmitter/frame_transmitter_pkg.vhd")
 eth.add_source_files(ROOT / "ethernet_tx/ethernet_tx_pkg.vhd")
 eth.add_source_files(ROOT / "ethernet_tx/ethernet_tx.vhd")
 
+eth.add_source_files(ROOT / "ethernet_rx_ddio/efinix_fpga_ddio_record.vhd")
+eth.add_source_files(ROOT / "ethernet_rx_ddio/efinix_rx_ddio.vhd")
+
+eth.add_source_files(ROOT / "ethernet_rx/ethernet_rx_pkg.vhd")
+eth.add_source_files(ROOT / "ethernet_rx/ethernet_rx.vhd")
+
 # testbenches
 eth.add_source_files(ROOT / "testbenches/mdio_driver_simulation/tb_mdio_driver.vhd")
 eth.add_source_files(ROOT / "testbenches/mdio_driver_simulation/mdio_tb.vhd")

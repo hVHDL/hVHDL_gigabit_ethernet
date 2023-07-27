@@ -1,67 +1,3 @@
-library ieee;
-    use ieee.std_logic_1164.all;
-    use ieee.numeric_std.all;
-
-package ethernet_rx_pkg is
-
-    type ethernet_rx_output_record is record
-        ethernet_frame_has_been_received : boolean;
-        number_of_received_bytes : natural range 0 to 2047;
-        start_address            : natural range 0 to 2047;
-    end record;
-
-end package ethernet_rx_pkg;
-
-package body ethernet_rx_pkg is
-
-end package body ethernet_rx_pkg;
-------------------------------------------------------------------------
-------------------------------------------------------------------------
-library ieee;
-    use ieee.std_logic_1164.all;
-    use ieee.numeric_std.all;
-
-    use work.ethernet_rx_pkg.all;
-    use work.ethernet_frame_ram_read_pkg.all;
-    use work.ethernet_frame_ram_write_pkg.all;
-    use work.ethernet_frame_receiver_pkg.all;
-    use work.ethernet_rx_ddio_pkg.all;
-
-entity ethernet_rx is
-    port (
-        clock  : in std_logic;
-        ddio_input : std_logic_vector(7 downto 0);
-        rx_out : out ethernet_rx_output_record;
-        write_port : out ram_write_control_record
-    );
-end entity ethernet_rx;
-
-
-architecture rtl of ethernet_rx is
-
-    signal self : ethernet_receiver_record := init_ethernet_receiver;
-    signal ethernet_ddio_out : ethernet_rx_ddio_data_output_group;
-
-begin
-
-    u_rxddio : entity work.ethernet_rx_ddio
-    port map(clock, (ddio_input(7 downto 4), ddio_input(3 downto 0)), ethernet_ddio_out);
-
-    process(clock) is
-    begin
-        if rising_edge(clock) then
-            create_ethernet_receiver(self, ethernet_ddio_out);
-            count_only_frame_bytes(self);
-            count_preamble_and_frame_bytes(self);
-
-            init_ram_write(write_port);
-            write_ethernet_frame_to_ram(self, write_port);
-            write_crc_to_receiver_ram(self, write_port);
-        end if;
-    end process;
-
-end rtl;
-------------------------------------------------------------------------
 LIBRARY ieee  ; 
     USE ieee.NUMERIC_STD.all  ; 
     USE ieee.std_logic_1164.all  ; 
@@ -77,6 +13,7 @@ context vunit_lib.vunit_context;
     use work.ethernet_frame_ram_write_pkg.all;
     use work.ethernet_frame_receiver_pkg.all;
     use work.ethernet_rx_ddio_pkg.all;
+    use work.ethernet_rx_pkg.all;
 
 entity loopback_tb is
   generic (runner_cfg : string);
@@ -117,6 +54,17 @@ architecture vunit_simulation of loopback_tb is
     signal write_port : ram_write_control_record := init_ram_write_control;
     signal ram_address : integer := 0;
 
+    signal ethernet_ddio : std_logic_vector(9 downto 0) := (others => '0');
+    signal ram_reader : ram_reader_record := init_ram_reader;
+    signal ram_shift_register : std_logic_vector(31 downto 0) := (others => '0');
+
+    signal rx_out : ethernet_rx_output_record;
+
+
+    signal crc_was_read_from_ram : boolean := false;
+
+    signal empty_ram : boolean := false;
+
 
 begin
 
@@ -132,6 +80,12 @@ begin
         elsif run("frame was sent successfully") then
             check(output_shift_register = x"2144df1c", "frame was not successfully sent");
 
+        elsif run("crc was read from ram") then
+            check(crc_was_read_from_ram, "crc was not read from ram");
+
+        elsif run("crc was correct") then
+            check(ram_shift_register = x"2144df1c", "crc was not read from ram");
+
         end if;
         
         test_runner_cleanup(runner); -- Simulation ends here
@@ -143,7 +97,27 @@ begin
 
     stimulus : process(simulator_clock)
 
-        constant number_of_words_in_frame : natural := c_example_frame'high + 1;
+        constant number_of_words_in_frame : natural := c_example_frame'high - 3;
+
+        function write_ethernet_ddio
+        (
+            byte_in : std_logic_vector 
+        ) return std_logic_vector is
+            variable return_value : std_logic_vector(9 downto 0);
+        begin
+            return_value := '1' & 
+                            byte_in(3) &
+                            byte_in(2) &
+                            byte_in(1) &
+                            byte_in(0) &
+                            '1' &
+                            byte_in(7) &
+                            byte_in(6) &
+                            byte_in(5) &
+                            byte_in(4);
+            return return_value;
+
+        end write_ethernet_ddio;
 
     begin
         if rising_edge(simulator_clock) then
@@ -162,33 +136,44 @@ begin
                 request_ethernet_frame(tx_in);
             end if;
 
+            ethernet_ddio <= (others => '0');
             if tx_is_active then
                 output_shift_register <= byte_out & output_shift_register(31 downto 8);
+                ethernet_ddio <= write_ethernet_ddio(byte_out);
             end if;
 
             if tx_is_ready(tx_out) then
                 tx_was_completed <= tx_is_ready(tx_out);
             end if;
 
+            create_ram_reader(ram_reader, ram_read_control_port, ram_read_out_port, ram_shift_register);
+            if ethernet_frame_is_received(rx_out) then
+                load_ram_with_offset_to_shift_register(ram_reader, number_of_words_in_frame-4, 4);
+            end if;
+            if ram_is_buffered_to_shift_register(ram_reader) then
+                crc_was_read_from_ram <= true;
+
+            end if;
+
+            empty_ram <= simulation_counter = 163;
+
+
+
         end if; -- rising_edge
     end process stimulus;	
-------------------------------------------------------------------------
-    frame_receiver : process(simulator_clock)
-    begin
-        if rising_edge(simulator_clock) then
-            init_ram_write(write_port);
-            if tx_is_active then
-                ram_address <= ram_address + 1;
-                write_data_to_ram(write_port, ram_address, byte_out);
-            end if;
-        end if;
-    end process;
 ------------------------------------------------------------------------
     u_ethernet_tx : entity work.ethernet_tx
     port map(simulator_clock, tx_in, tx_out, tx_is_active, byte_out);
 ------------------------------------------------------------------------
     u_dpram : entity work.dpram
     port map(simulator_clock, ram_read_control_port,ram_read_out_port, simulator_clock, write_port);
-------------------------------------------------------------------------
+
+    u_ethernet_rx : entity work.ethernet_rx
+    port map(
+        clock      => simulator_clock,
+        ddio_input => ethernet_ddio,
+        rx_out         => rx_out,
+        empty_ram      => empty_ram,
+        write_port     => write_port);
 ------------------------------------------------------------------------
 end vunit_simulation;

@@ -179,7 +179,9 @@ package body ethernet_frame_ram_read_pkg is
 
         self.ram_buffering_is_complete <= false;
         if ram_data_is_ready(ram_output_port) then
-            self.number_addresses_left_to_read <= self.number_addresses_left_to_read - 1;
+            if self.number_addresses_left_to_read > 0 then
+                self.number_addresses_left_to_read <= self.number_addresses_left_to_read - 1;
+            end if;
             if self.number_addresses_left_to_read = 1 then
                 self.ram_buffering_is_complete <= true;
             end if;
