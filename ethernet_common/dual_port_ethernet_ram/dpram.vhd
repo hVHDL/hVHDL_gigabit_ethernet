@@ -29,7 +29,7 @@ architecture test of dpram is
 
 begin
 
-    read_dp_ram : process(clk1, clk2)
+    read_dp_ram : process(clk1)
         
     begin
         --------------------------------------------------
