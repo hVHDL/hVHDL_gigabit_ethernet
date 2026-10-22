@@ -28,6 +28,18 @@ It is self contained and does not use the older sources of this repository; some
 (ethernet_pkg, mdio_driver) are the same, so compile it into a library of its own. The
 receive FIFO uses simple_dual_port_ram from hVHDL_memory_library (a submodule here).
 
+## network_responder
+
+ethernet_mac/network_responder.vhd gives an FPGA an address on the network, between
+ethernet_mac's receive and transmit streams: it answers ARP and ICMP echo (ping) for its IP,
+echoes UDP datagrams sent to a port, and sends frames with a test EtherType (0x88B5) back.
+IPv4 is answered without options or fragments and with a good header checksum. A reply is its
+request with a few fields changed (addresses, opcode/type, ports), sent from a frame buffer
+behind a reply header, so the IP header and UDP checksums stay right as they are and only the
+ICMP checksum is updated (RFC 1624). The buffer is a simple dual port RAM across the receive
+and transmit clocks; one frame at a time, the others wait in ethernet_mac's receive FIFO.
+Own address, IP and UDP port are inputs (quasi static), the replies are counted with pulses.
+
 Tests, with VUnit and nvc:
 
     git submodule update --init
