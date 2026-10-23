@@ -9,11 +9,16 @@ library ieee;
 -- found from the start of frame delimiter: three pairings are decoded in parallel and the
 -- one that shows 0x55 followed by 0xD5 is used for the rest of the frame.
 --   0: hi(t) with lo(t), 1: hi(t-1) with lo(t), 2: hi(t) with lo(t-1)
+-- line_out is the whole frame as it was on the line, the preamble and the SFD too, for a
+-- second MAC on the same port (ethernet_mac's g_shared_port): the bytes before the SFD are
+-- given as preamble bytes, as the pairing is not known yet (with the rising edge nibbles a
+-- clock early, pairing 1, that is one preamble byte more than on the line).
 entity rgmii_rx is
     port(
         clock          : in std_logic;
         rgmii_in       : in rgmii_ddio_record;
         gmii_out       : out gmii_record;     -- valid from the first byte after the SFD
+        line_out       : out gmii_record;     -- the preamble, the SFD and the frame
         alignment      : out natural range 0 to 3;  -- 3 = no SFD found yet
         frame_is_ended : out boolean
     );
@@ -31,6 +36,7 @@ architecture rtl of rgmii_rx is
     signal previous     : byte_array := (others => (others => '0'));
     signal locked       : natural range 0 to 3 := 3;
     signal in_frame     : boolean := false;
+    signal trailing     : boolean := false;  -- a frame ended, its DV not low yet in pairing 0
 
 begin
 
@@ -61,22 +67,33 @@ begin
             previous     <= candidate;
 
             gmii_out       <= gmii_idle;
+            line_out       <= gmii_idle;
             frame_is_ended <= false;
 
+            if candidate_dv(0) = '0' then
+                trailing <= false;
+            end if;
+
             if not in_frame then
+                if candidate_dv(0) = '1' and not trailing then
+                    line_out <= (data => preamble_byte, is_valid => true, is_error => false);
+                end if;
                 for i in 0 to 2 loop
                     if candidate_dv(i) = '1' and candidate(i) = start_of_frame_byte and previous(i) = preamble_byte then
                         locked   <= i;
                         in_frame <= true;
+                        line_out <= (data => start_of_frame_byte, is_valid => true, is_error => false);
                         exit;
                     end if;
                 end loop;
             else
                 if candidate_dv(locked) = '1' then
                     gmii_out <= (data => candidate(locked), is_valid => true, is_error => candidate_er(locked) = '1');
+                    line_out <= (data => candidate(locked), is_valid => true, is_error => candidate_er(locked) = '1');
                 else
                     in_frame       <= false;
                     frame_is_ended <= true;
+                    trailing       <= candidate_dv(0) = '1';
                 end if;
             end if;
         end if;

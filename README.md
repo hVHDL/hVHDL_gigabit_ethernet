@@ -40,6 +40,19 @@ ICMP checksum is updated (RFC 1624). The buffer is a simple dual port RAM across
 and transmit clocks; one frame at a time, the others wait in ethernet_mac's receive FIFO.
 Own address, IP and UDP port are inputs (quasi static), the replies are counted with pulses.
 
+## sharing a port with another MAC
+
+With g_shared_port, ethernet_mac shares its PHY with a second MAC at the GMII level, such as
+a processor's MAC next to it in the same chip, each with its own address: share_rx_out gives
+the other MAC every received frame as it was on the line (preamble, SFD and FCS too, from
+rgmii_rx's line_out), and ethernet_mac/gmii_share.vhd puts the frames of its GMII transmit,
+share_tx_in, onto the line between ethernet_mac's own. GMII has no back-pressure, so those
+frames go through a store and forward FIFO and have priority: ethernet_mac_tx is held off
+(its hold input) while the FIFO has a frame, and as the other MAC sends no faster than the
+line, the FIFO never holds more than what came during one of ethernet_mac's frames. Frames
+with TX_ER or longer than the FIFO are dropped whole. Both are counted (registers 0x180,
+0x184).
+
 Tests, with VUnit and nvc:
 
     git submodule update --init

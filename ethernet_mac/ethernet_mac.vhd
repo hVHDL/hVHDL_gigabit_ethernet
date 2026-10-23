@@ -15,6 +15,11 @@ library ieee;
 -- 1000 Mb/s full duplex only: the speed bits are kept but change nothing, and there is no
 -- pause frame or half duplex logic.
 --
+-- g_shared_port: the port is shared with another MAC at the GMII level (a processor's MAC
+-- next to this one, each with its own address): share_rx_out gives it every received frame
+-- as it was on the line, and gmii_share puts the frames of its GMII transmit, share_tx_in,
+-- onto the line between this MAC's. Its MDIO stays its own: mdc/mdio_* here are then unused.
+--
 -- registers, byte offsets, zero wait states
 --   0x008 RW COMMAND_CONFIG  bit0 TX_ENA, bit1 RX_ENA, bit4 PROMIS_EN; the other bits kept
 --   0x00c RW MAC_ADDR_LO     address bytes 0..3 (byte 0, first on the wire, in bits 7:0)
@@ -31,11 +36,15 @@ library ieee;
 --   0x110 R  MDIO_RD_DATA    bits 15:0, of the last read
 --   0x114 R  MDIO_STATUS     bit1 busy
 --   0x144 RW MAC_ADDR_MASK_LO, 0x148 MAC_ADDR_MASK_HI  the address bits compared, as the address
+--   0x180 R  shared port: the other MAC's frames sent (g_shared_port)
+--   0x184 R  shared port: the other MAC's frames dropped (TX_ER or the FIFO full)
 -- Other addresses read 0, writes to them are ignored. reset clears the registers and counters.
 entity ethernet_mac is
     generic(
         g_rx_fifo_depth       : positive := 4096;
-        g_clocks_per_half_mdc : positive := 25     -- 2.5 MHz MDC at 125 MHz
+        g_clocks_per_half_mdc : positive := 25;    -- 2.5 MHz MDC at 125 MHz
+        g_shared_port         : boolean  := false;
+        g_share_fifo_depth    : positive := 4096
     );
     port(
         clock        : in std_logic;   -- 125 MHz: the registers, the transmit side and RGMII transmit
@@ -68,7 +77,10 @@ entity ethernet_mac is
         mdc          : out std_logic;
         mdio_out     : out std_logic;
         mdio_oe      : out std_logic;
-        mdio_in      : in std_logic
+        mdio_in      : in std_logic;
+
+        share_tx_in  : in gmii_record := gmii_idle;  -- the other MAC's GMII transmit, on clock
+        share_rx_out : out gmii_record               -- its GMII receive, on rx_clock
     );
 end entity ethernet_mac;
 
@@ -86,6 +98,7 @@ architecture rtl of ethernet_mac is
 
     subtype counter is unsigned(31 downto 0);
     signal frames_tx_ok, frames_rx_ok, crc_errors, in_errors, out_errors : counter := (others => '0');
+    signal shared_sent, shared_dropped : counter := (others => '0');
 
     -- the configuration in the receive clock
     constant config_width : natural := 2 + 48 + 48;
@@ -94,7 +107,9 @@ architecture rtl of ethernet_mac is
     attribute async_reg : boolean;
     attribute async_reg of rx_reset_sync : signal is true;
 
-    signal tx_gmii, rx_gmii : gmii_record;
+    signal tx_gmii, rx_gmii, line_gmii : gmii_record;
+    signal tx_hold, tx_busy : boolean;
+    signal share_passed, share_dropped : boolean := false;
     signal rx_frame_is_ended : boolean;
     signal rx_received, rx_crc_error, rx_frame_error : boolean;
     signal received, crc_error, frame_error : boolean;
@@ -133,6 +148,8 @@ begin
             WHEN 16#114# => if mdio_busy then prdata(1) <= '1'; end if;
             WHEN 16#144# => prdata <= address_mask(31 downto 0);
             WHEN 16#148# => prdata(15 downto 0) <= address_mask(47 downto 32);
+            WHEN 16#180# => prdata <= std_logic_vector(shared_sent);
+            WHEN 16#184# => prdata <= std_logic_vector(shared_dropped);
             WHEN others  => null;
         end CASE;
     end process;
@@ -183,6 +200,8 @@ begin
             if received       then frames_rx_ok <= frames_rx_ok + 1; end if;
             if crc_error      then crc_errors   <= crc_errors + 1;   end if;
             if frame_error    then in_errors    <= in_errors + 1;    end if;
+            if share_passed   then shared_sent    <= shared_sent + 1;    end if;
+            if share_dropped  then shared_dropped <= shared_dropped + 1; end if;
 
             if reset = '1' then
                 command_config <= (others => '0');
@@ -196,6 +215,8 @@ begin
                 crc_errors     <= (others => '0');
                 in_errors      <= (others => '0');
                 out_errors     <= (others => '0');
+                shared_sent    <= (others => '0');
+                shared_dropped <= (others => '0');
             end if;
         end if;
     end process;
@@ -205,6 +226,8 @@ begin
     port map(
         clock        => clock
         ,enable      => command_config(0) = '1'
+        ,hold        => tx_hold
+        ,busy        => tx_busy
         ,s_tvalid    => s_tvalid
         ,s_tready    => s_tready
         ,s_tdata     => s_tdata
@@ -214,10 +237,28 @@ begin
         ,frame_error => tx_frame_error
     );
 
+    port_sharing : if g_shared_port generate
+        u_share : entity work.gmii_share
+        generic map(g_fifo_depth => g_share_fifo_depth)
+        port map(
+            clock          => clock
+            ,mac_gmii_in   => tx_gmii
+            ,mac_busy      => tx_busy
+            ,mac_hold      => tx_hold
+            ,other_gmii_in => share_tx_in
+            ,gmii_out      => line_gmii
+            ,frame_passed  => share_passed
+            ,frame_dropped => share_dropped
+        );
+    else generate
+        tx_hold   <= false;
+        line_gmii <= tx_gmii;
+    end generate;
+
     u_rgmii_tx : entity work.rgmii_tx
     port map(
         clock          => clock
-        ,gmii_in       => tx_gmii
+        ,gmii_in       => line_gmii
         ,delay_lo_half => false
         ,rgmii_out     => rgmii_tx_out
         ,tx_clock_out  => tx_clock_out
@@ -240,6 +281,7 @@ begin
         clock           => rx_clock
         ,rgmii_in       => rgmii_rx_in
         ,gmii_out       => rx_gmii
+        ,line_out       => share_rx_out
         ,alignment      => open
         ,frame_is_ended => rx_frame_is_ended
     );

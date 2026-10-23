@@ -12,13 +12,17 @@ library ieee;
 -- stage in front, such as tx_checksum_inserter, does): tready is held low through the
 -- preamble and then high until tlast. A frame whose bytes stop coming before tlast is cut
 -- short with TX_ER on the line and the rest of it is taken and thrown away. With
--- enable low, frames are taken and thrown away whole.
+-- enable low, frames are taken and thrown away whole. While hold is high no frame is started
+-- (gmii_share uses it to give the line to another MAC); busy is high from a frame's start to
+-- the end of its interframe gap.
 --
 -- counters, each a clock pulse: frame_sent, frame_error (a frame cut short).
 entity ethernet_mac_tx is
     port(
         clock       : in std_logic;
         enable      : in boolean;
+        hold        : in boolean := false;
+        busy        : out boolean;
 
         s_tvalid    : in std_logic;
         s_tready    : out std_logic;
@@ -47,6 +51,7 @@ architecture rtl of ethernet_mac_tx is
 begin
 
     s_tready <= '1' when state = data or state = discard else '0';
+    busy     <= state /= idle;
 
     process(clock)
         procedure output(value : byte) is
@@ -80,7 +85,7 @@ begin
                 WHEN idle =>
                     index <= 0;
                     cut   <= false;
-                    if s_tvalid = '1' then
+                    if s_tvalid = '1' and not hold then
                         if enable then
                             state <= preamble;
                         else

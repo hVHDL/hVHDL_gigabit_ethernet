@@ -77,6 +77,12 @@ architecture vunit_simulation of ethernet_mac_tb is
     signal rx_frame_ends : end_array := (others => 0);
     signal rx_frames     : natural := 0;
 
+    -- what came out of share_rx_out: frames as they were on the line
+    signal share_rx      : gmii_record;
+    signal line_lengths  : end_array := (others => 0);
+    signal line_frames   : natural := 0;
+    signal line_bad      : natural := 0;   -- no preamble and SFD, or a bad FCS
+
     -- byte i of test frame seed
     function frame_byte(destination : byte_array; seed, i : natural) return byte is
     begin
@@ -128,6 +134,7 @@ begin
         ,mdio_out     => mdio_out
         ,mdio_oe      => mdio_oe
         ,mdio_in      => mdio
+        ,share_rx_out => share_rx
     );
 
 ------------------------------------------------------------------------
@@ -180,6 +187,42 @@ begin
                     rx_frame_ends(rx_frames) <= rx_count + 1;
                     rx_frames <= rx_frames + 1;
                 end if;
+            end if;
+        end if;
+    end process;
+
+    -- preamble bytes (7, or 8 with the rising edge nibbles a clock early), the SFD, and a frame
+    -- whose FCS checks; its length counted from the SFD
+    line_sink : process(rx_clock)
+        variable preamble : natural := 0;
+        variable length   : natural := 0;
+        variable in_frame : boolean := false;
+        variable crc      : std_logic_vector(31 downto 0) := crc32_init;
+        variable ok       : boolean := true;
+    begin
+        if rising_edge(rx_clock) then
+            if share_rx.is_valid then
+                if in_frame then
+                    crc    := next_crc32(crc, share_rx.data);
+                    length := length + 1;
+                elsif share_rx.data = start_of_frame_byte then
+                    ok       := ok and (preamble = 7 or preamble = 8);
+                    in_frame := true;
+                else
+                    ok       := ok and share_rx.data = preamble_byte;
+                    preamble := preamble + 1;
+                end if;
+            elsif preamble > 0 or in_frame then
+                if not ok or not in_frame or crc /= crc32_residue then
+                    line_bad <= line_bad + 1;
+                end if;
+                line_lengths(line_frames) <= length;
+                line_frames <= line_frames + 1;
+                preamble := 0;
+                length   := 0;
+                in_frame := false;
+                crc      := crc32_init;
+                ok       := true;
             end if;
         end if;
     end process;
@@ -328,6 +371,11 @@ begin
                 check_frame(own_mac, 4, 61);
                 check_frame(own_mac, 5, 64);
                 check_frame(own_mac, 6, 64);
+                -- and all of them on share_rx_out, the preamble, the SFD and the FCS with them
+                check_equal(line_frames, 6, "frames on share_rx_out");
+                check_equal(line_bad, 0, "frames on share_rx_out without preamble, SFD or good FCS");
+                check_equal(line_lengths(2), 1514 + 4, "a full frame's length on share_rx_out");
+                check_equal(line_lengths(0), 60 + 4, "a short frame's length on share_rx_out");
                 check_register(FRAMES_TX_OK, 6, "frames transmitted");
                 check_register(FRAMES_RX_OK, 6, "frames received counted");
                 check_register(CRC_ERRORS, 0, "no CRC errors");
